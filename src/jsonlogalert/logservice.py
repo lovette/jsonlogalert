@@ -472,8 +472,8 @@ class LogService:
             LogAlertRuntimeError
         """
         if err:
-            raise LogAlertRuntimeError(f"{message} '{self.fullname}': {err}")
-        raise LogAlertRuntimeError(f"{message} '{self.fullname}'")
+            raise LogAlertRuntimeError(f"{self.fullname}: {message}: {err}")
+        raise LogAlertRuntimeError(f"{self.fullname}: {message}")
 
     ######################################################################
     # Helper functions

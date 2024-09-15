@@ -183,8 +183,8 @@ class LogAlertOutput:
             LogAlertRuntimeError
         """
         if err:
-            raise LogAlertRuntimeError(f"{message} '{self.fullname}': {err}")
-        raise LogAlertRuntimeError(f"{message} '{self.fullname}'")
+            raise LogAlertRuntimeError(f"{self.log_service.fullname}: {message}: {err}")
+        raise LogAlertRuntimeError(f"{self.log_service.fullname}: {message}")
 
 
 ######################################################################

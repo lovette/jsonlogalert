@@ -535,8 +535,8 @@ class LogSource:
             LogAlertRuntimeError
         """
         if err:
-            raise LogAlertRuntimeError(f"{message} '{self.fullname}': {err}")
-        raise LogAlertRuntimeError(f"{message} '{self.fullname}'")
+            raise LogAlertRuntimeError(f"{self.name}: {message}: {err}")
+        raise LogAlertRuntimeError(f"{self.name}: {message}")
 
     ######################################################################
     # Helper functions
