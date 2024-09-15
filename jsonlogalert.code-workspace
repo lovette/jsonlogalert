@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"[python]": {
+			"editor.formatOnSave": true
+		},
+		"files.exclude": {
+			".ruff_cache": true,
+			"*.sublime-*": true,
+			"**/__pycache__": true,
+			"**/*.egg-info": true,
+			"build": true,
+		},
+		"python.analysis.exclude": [
+			"build",
+			"**/*.egg-info"
+		],
+		"python.analysis.diagnosticMode": "workspace",
+	}
+}
