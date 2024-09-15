@@ -1,0 +1,11 @@
+# Only COPY what is necessary for install.sh
+*
+!install.sh
+!jsonlogalert.sh
+!LICENSE.md
+!logtail-journal
+!logtail-logcheck
+!man
+!pyproject.toml
+!requirements.txt
+!src

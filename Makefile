@@ -137,3 +137,30 @@ distclean:  ## Delete build files, python cache and package build artifacts
 	rm -rf src/*.egg-info
 	rm -rf ruff_cache
 	find . -type d \( -name __pycache__ \) -print -exec rm -rf {} +
+
+############################
+##@ Podman test container
+
+.PHONY: podman-build
+podman-build: ## Build podman image
+	podman build -t jsonlogalert -f Dockerfile .
+
+.PHONY: podman-execsh
+podman-execsh: ## Exec shell inside running podman
+	podman run --rm -it --entrypoint bash jsonlogalert
+
+.PHONY: podman-build-dev
+podman-build-dev: ## Build podman image
+	podman build -t jsonlogalert-dev -f Dockerfile-dev .
+
+.PHONY-dev: podman-execsh-dev
+podman-execsh-dev: ## Exec shell inside running podman
+	podman run --rm -it --entrypoint bash jsonlogalert-dev
+
+.PHONY: podman-build-install
+podman-build-install: ## Build podman image
+	podman build -t jsonlogalert-install -f Dockerfile-install --ignorefile Dockerfile-install.ignore .
+
+.PHONY-install: podman-execsh-install
+podman-execsh-install: ## Exec shell inside running podman
+	podman run --rm -it --entrypoint bash jsonlogalert-install
