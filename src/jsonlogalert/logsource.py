@@ -437,7 +437,7 @@ class LogSource:
         if not self.tail_state_dir.is_dir():
             raise LogAlertRuntimeError(f"{self.tail_state_dir}: No such directory")
 
-        select_all = [service.name for service in self.log_services if not service.select_rules and not service.ignore_rules]
+        select_all = [service.name for service in self.log_services if not service.select_rules and not service.drop_rules]
         if len(select_all) > 1:
             # It's ok if a single service wants all events (a catchall) but seems odd if 2+ do
             self.log_warning(f"{len(select_all)} services are configured to select all log entries ({', '.join(select_all)})")

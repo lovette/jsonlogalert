@@ -47,7 +47,7 @@ class LogService:
         self.service_confdir_path = service_confdir_path
         self.service_config: dict = None
         self.select_rules: tuple = None
-        self.ignore_rules: tuple = None
+        self.drop_rules: tuple = None
 
         # These need to be reset() between iterations
         self.discard_count = 0
@@ -143,13 +143,13 @@ class LogService:
         return self.service_confdir_path / self.service_config.get("select_config_path", "select.yaml")
 
     @cached_property
-    def ignore_config_path(self) -> Path:
+    def drop_config_path(self) -> Path:
         """Service ignore rules configuration path.
 
         Returns:
             Path
         """
-        return self.service_confdir_path / self.service_config.get("ignore_config_path", "ignore.yaml")
+        return self.service_confdir_path / self.service_config.get("drop_config_path", "drop.yaml")
 
     @cached_property
     def rewrite_fields(self) -> Sequence[tuple[str, re.Pattern]]:
@@ -217,7 +217,7 @@ class LogService:
                     del self.service_config[k]
 
         self.select_rules = self._build_rules(self.select_config_path)
-        self.ignore_rules = self._build_rules(self.ignore_config_path)
+        self.drop_rules = self._build_rules(self.drop_config_path)
 
         self.validate_conf()
 
@@ -225,20 +225,20 @@ class LogService:
         """Print rules for debugging."""
         echo(f"Rules for log source '{self.log_source.name}' service '{self.name}':")
 
-        if not self.select_rules and not self.ignore_rules:
-            echo("> No rules are defined; all log entries will be evaluated.")
+        if not self.select_rules and not self.drop_rules:
+            echo("> No rules are defined; all log entries will be SELECTED.")
         else:
             if self.select_rules:
                 echo("> Entries matching these rules will be SELECTED:")
                 FieldRule.print_rules(self.select_rules)
             else:
-                echo("> No select rules are defined; all log entries will be selected.")
+                echo("> No select rules are defined; all log entries will be SELECTED.")
 
-            if self.ignore_rules:
-                echo("> Entries matching these rules will NOT be evaluated:")
-                FieldRule.print_rules(self.ignore_rules)
+            if self.drop_rules:
+                echo("> Entries matching these rules will be DROPPED:")
+                FieldRule.print_rules(self.drop_rules)
             else:
-                echo("> No ignore rules are defined; all log entries will be evaluated.")
+                echo("> No ignore rules are defined; all log entries will be SELECTED.")
 
     def _load_config_json(self, config_path: Path) -> dict[str, Any]:
         """Load a service JSON configuration file.
@@ -274,7 +274,7 @@ class LogService:
         """
         rewrittenfields = self._get_rewrite_fields(log_entry)
 
-        # Include rewrite fields so they are available to select/ignore rules
+        # Include rewrite fields so they are available to select/drop rules
         # but don't change 'LogEntry.rawfields' until *after* we claim the entry.
         service_rawfields = (log_entry.rawfields | rewrittenfields) if rewrittenfields else log_entry.rawfields
 
@@ -282,8 +282,8 @@ class LogService:
         if self.select_rules and not FieldRule.match_rules(service_rawfields, self.select_rules):
             return False
 
-        # Ignore means: Entry belongs to us but we don't care about it.
-        if self.ignore_rules and FieldRule.match_rules(service_rawfields, self.ignore_rules):
+        # Drop means: Entry belongs to us but we don't care about it.
+        if self.drop_rules and FieldRule.match_rules(service_rawfields, self.drop_rules):
             return True
 
         # Capture/ignore fields as configured
