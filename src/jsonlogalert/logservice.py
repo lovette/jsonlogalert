@@ -223,7 +223,7 @@ class LogService:
 
     def print_rules(self) -> None:
         """Print rules for debugging."""
-        echo(f"Rules for log source '{self.log_source.name}' service '{self.name}':")
+        echo(f"Rules for '{self.fullname}':")
 
         if not self.select_rules and not self.drop_rules:
             echo("> No rules are defined; all log entries will be SELECTED.")
@@ -237,8 +237,6 @@ class LogService:
             if self.drop_rules:
                 echo("> Entries matching these rules will be DROPPED:")
                 FieldRule.print_rules(self.drop_rules)
-            else:
-                echo("> No drop rules are defined; all log entries will be SELECTED.")
 
     def _load_config_json(self, config_path: Path) -> dict[str, Any]:
         """Load a service JSON configuration file.

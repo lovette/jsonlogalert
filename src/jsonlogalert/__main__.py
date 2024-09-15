@@ -508,9 +508,13 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     logging.debug("Configuration complete, ready to read logs!")
 
     if print_rules:
+        i = 0
         for log_source in log_sources:
             for log_service in log_source.log_services:
+                if i:
+                    click.echo("")
                 log_service.print_rules()
+                i += 1
 
         sys.exit(0)
 
