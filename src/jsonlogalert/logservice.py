@@ -475,6 +475,15 @@ class LogService:
             raise LogAlertRuntimeError(f"{self.fullname}: {message}: {err}")
         raise LogAlertRuntimeError(f"{self.fullname}: {message}")
 
+    @cached_property
+    def is_catchall(self) -> bool:
+        """Return True if this service claims all log entries.
+
+        Returns:
+            bool
+        """
+        return not self.select_rules and not self.drop_rules
+
     ######################################################################
     # Helper functions
 
@@ -496,7 +505,7 @@ class LogService:
         assert log_source.source_dir.is_dir()
 
         services: list[LogService] = []
-        s_catchall: LogService = None
+        catchalls: list[LogService] = []
         service_dirs = []
 
         # Source directory can also define the service
@@ -519,12 +528,12 @@ class LogService:
 
             s.load_conf(cli_config)
 
-            if s.name.endswith("catchall"):
-                s_catchall = s
+            if s.is_catchall:
+                catchalls.append(s)
             else:
                 services.append(s)
 
-        if s_catchall:
-            services.append(s_catchall)
+        if catchalls:
+            services.extend(catchalls)
 
         return tuple(services)
