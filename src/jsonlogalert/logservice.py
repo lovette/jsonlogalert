@@ -47,6 +47,7 @@ class LogService:
         self.service_confdir_path = service_confdir_path
         self.service_config: dict = None
         self.select_rules: tuple = None
+        self.pass_rules: tuple = None
         self.drop_rules: tuple = None
 
         # These need to be reset() between iterations
@@ -143,6 +144,15 @@ class LogService:
         return self.service_confdir_path / self.service_config.get("select_rules_path", "select.yaml")
 
     @cached_property
+    def pass_rules_path(self) -> Path:
+        """Service pass rules configuration path.
+
+        Returns:
+            Path
+        """
+        return self.service_confdir_path / self.service_config.get("pass_rules_path", "pass.yaml")
+
+    @cached_property
     def drop_rules_path(self) -> Path:
         """Service drop rules configuration path.
 
@@ -217,6 +227,7 @@ class LogService:
                     del self.service_config[k]
 
         self.select_rules = self._build_rules(self.select_rules_path)
+        self.pass_rules = self._build_rules(self.pass_rules_path)
         self.drop_rules = self._build_rules(self.drop_rules_path)
 
         self.validate_conf()
@@ -233,6 +244,10 @@ class LogService:
                 FieldRule.print_rules(self.select_rules)
             else:
                 echo("> No select rules are defined; all log entries will be SELECTED.")
+
+            if self.pass_rules:
+                echo("> Entries matching these rules will be PASSED:")
+                FieldRule.print_rules(self.pass_rules)
 
             if self.drop_rules:
                 echo("> Entries matching these rules will be DROPPED:")
@@ -278,6 +293,10 @@ class LogService:
 
         # Select means: Entry belongs to us; empty select = select everything.
         if self.select_rules and not FieldRule.match_rules(service_rawfields, self.select_rules):
+            return False
+
+        # Pass means: Entry belongs to us but let someone else deal with it.
+        if self.pass_rules and FieldRule.match_rules(service_rawfields, self.pass_rules):
             return False
 
         # Drop means: Entry belongs to us but we don't care about it.
