@@ -398,7 +398,7 @@ class LogService:
                 outputs.append(LogAlertOutputToStdout(self))
 
         if not outputs:
-            self.raise_error("No outputs are configured")
+            self.log_warning("No outputs are configured")
 
         return outputs
 
