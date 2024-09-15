@@ -134,22 +134,22 @@ class LogService:
         return self.service_confdir_path / "service.yaml"
 
     @cached_property
-    def select_config_path(self) -> Path:
+    def select_rules_path(self) -> Path:
         """Service select rules configuration path.
 
         Returns:
             Path
         """
-        return self.service_confdir_path / self.service_config.get("select_config_path", "select.yaml")
+        return self.service_confdir_path / self.service_config.get("select_rules_path", "select.yaml")
 
     @cached_property
-    def drop_config_path(self) -> Path:
-        """Service ignore rules configuration path.
+    def drop_rules_path(self) -> Path:
+        """Service drop rules configuration path.
 
         Returns:
             Path
         """
-        return self.service_confdir_path / self.service_config.get("drop_config_path", "drop.yaml")
+        return self.service_confdir_path / self.service_config.get("drop_rules_path", "drop.yaml")
 
     @cached_property
     def rewrite_fields(self) -> Sequence[tuple[str, re.Pattern]]:
@@ -216,8 +216,8 @@ class LogService:
                 if k.startswith(remove_prefix):
                     del self.service_config[k]
 
-        self.select_rules = self._build_rules(self.select_config_path)
-        self.drop_rules = self._build_rules(self.drop_config_path)
+        self.select_rules = self._build_rules(self.select_rules_path)
+        self.drop_rules = self._build_rules(self.drop_rules_path)
 
         self.validate_conf()
 
@@ -238,7 +238,7 @@ class LogService:
                 echo("> Entries matching these rules will be DROPPED:")
                 FieldRule.print_rules(self.drop_rules)
             else:
-                echo("> No ignore rules are defined; all log entries will be SELECTED.")
+                echo("> No drop rules are defined; all log entries will be SELECTED.")
 
     def _load_config_json(self, config_path: Path) -> dict[str, Any]:
         """Load a service JSON configuration file.
