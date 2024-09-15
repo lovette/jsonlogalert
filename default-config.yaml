@@ -1,0 +1,106 @@
+######################################################################
+# GENERAL OPTIONS
+
+# Set path to directory containing source and service definitions.
+# default: /etc/jsonlogalert.d
+#config_dir: DIRECTORY
+
+# Read only these log SOURCE(s).
+#sources:
+# - SOURCE
+# - ...
+
+# Enable only these SERVICE(s) for a log SOURCE.
+#services:
+# - SERVICE
+# - ...
+
+# Be more verbose
+#verbose: 1
+
+
+######################################################################
+# TAIL LOG OPTIONS
+
+# Tail systemd journal DIRECTORY.
+#tail_journal_dir: DIRECTORY
+
+# Set path of executable to tail systemd journal.
+# default: logtail-journal
+#tail_journal_bin: FILE
+
+# Tail text log LOGFILE(s).
+# A single SOURCE must be specified to know how to parse given files.
+#tail_file_paths:
+# - LOGFILE
+# - ...
+
+# Set path of executable to tail log files.
+# default: logtail2
+#tail_file_bin: FILE
+
+# Set path of DIRECTORY to save tail offset/cursor state.
+# default: /var/lib/misc
+#tail_state_dir: DIRECTORY
+
+# Do not update tail offset/cursor.
+#tail_debug: True
+
+######################################################################
+# GENERAL OUTPUT OPTIONS
+
+# Output results to stdout.
+#output_stdout: True
+
+# Use FILENAME instead of default output template.
+#output_template_file: FILENAME
+
+
+######################################################################
+# FILE OUTPUT OPTIONS
+
+# Output results to files in DIRECTORY.
+#output_file_dir: DIRECTORY
+
+# Output results to FILENAME in DIRECTORY when a single SERVICE is specified.
+#output_file_name: FILENAME
+
+######################################################################
+# SMTP OUTPUT OPTIONS
+
+# Mail server hostname or address.
+# default: localhost
+#output_smtp_host: HOSTNAME
+
+# Mail server port.
+# default: 25
+#output_smtp_port: INTEGER
+
+# Mail server uses SSL connection.
+#output_smtp_auth_ssl: False
+
+# Mail server uses TLS.
+#output_smtp_auth_tls: False
+
+# Mail server authentication username.
+#output_smtp_auth_username: USERNAME
+
+# Mail server authentication password.
+#output_smtp_auth_password: PASSWORD
+
+# Email recipient address. Required.
+#output_smtp_rcpt: EMAIL
+
+# Email sender address.
+# default: recipient address
+#output_smtp_sender: EMAIL
+
+# Email recipient name.
+#output_smtp_rcpt_name: NAME
+
+# Email sender name.
+# default: recipient name
+#output_smtp_sender_name: NAME
+
+# Email subject line.
+#output_smtp_subject: SUBJECT

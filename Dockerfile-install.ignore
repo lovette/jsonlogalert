@@ -1,5 +1,6 @@
 # Only COPY what is necessary for install.sh
 *
+!default-config*
 !install.sh
 !jsonlogalert.sh
 !LICENSE.md

@@ -247,7 +247,7 @@ STUBBIN="jsonlogalert.sh"
 RELEASE_TAG=
 ARG_INSTALL_EDITABLE=
 MANDIR=/usr/share/man
-ETCDIR=/etc/jsonlogalert.d
+ETCDIR=/etc
 LOGTAILDTRDIR="/usr/share/logtail/detectrotate"
 SRCDIR="${SRCDIR:-}"
 BINDIR="${BINDIR:-${BINDIR_DEFAULT}}"
@@ -267,6 +267,13 @@ parse_args()
     esac
   done
   shift $((OPTIND - 1))
+}
+install_etc()
+{
+  srcdir="$1"
+  install -d "${ETCDIR}"
+  install "${srcdir}"/default-config.yaml "${ETCDIR}"/jsonlogalert.conf
+  (cd /opt/jsonlogalert/default-config.d && find . -type f -exec install -D "{}" "/etc/jsonlogalert.d/{}" \;)
 }
 install_extras()
 {
@@ -353,9 +360,9 @@ install_binaries()
 install_local()
 {
   srcdir=$(readlink -f "$1")
-  install -d "${ETCDIR}"
   install_venv "${srcdir}"
   install_binaries "${srcdir}"
+  install_etc "${srcdir}"
   install_stub
   install_extras
 }
