@@ -1,0 +1,18 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"folder_exclude_patterns":
+			[
+				".ruff_cache",
+				".venv"
+			],
+			"file_exclude_patterns":
+			[
+				"*.code-*"
+				"*.sublime-*",
+			],
+		}
+	]
+}
