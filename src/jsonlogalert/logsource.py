@@ -326,7 +326,7 @@ class LogSource:
         except (TypeError, ValueError) as err:
             raise LogAlertTailError(_tail_exc_msg("Exec tail Popen failed", err, retcode)) from err
 
-    def parse_stream(self, log_file_stream: io.TextIOWrapper, stream_name: str) -> None:  # noqa: C901
+    def parse_stream(self, log_file_stream: io.TextIOWrapper, stream_name: str) -> None:
         """Parse a file stream where each line is a JSON structured message.
 
         The file content is expected to be a series of objects each separated by a newline.
@@ -348,6 +348,8 @@ class LogSource:
             try:
                 fields = self.parse_line(log_line)
                 self._apply_field_converters(fields, log_line)
+                log_entry = LogEntry(fields, self.timestamp_field, self.message_field)
+                claimed = any(service.claim_entry(log_entry) for service in self.log_services)
             except LogAlertParserError as err:
                 if fail_line_count <= MAX_PARSE_STREAM_FAIL_MSGS:
                     self.log_warning(f"Failed to parse log entry (line {line_count}): {err}")
@@ -356,16 +358,6 @@ class LogSource:
 
                 fail_line_count += 1
             else:
-                claimed = False
-
-                log_entry = LogEntry(fields, self.timestamp_field, self.message_field)
-
-                # Add line to service that claims it
-                for service in self.log_services:
-                    if service.claim_entry(log_entry):
-                        claimed = True
-                        break
-
                 if not claimed:
                     unclaimed_line_count += 1
 

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from click import echo
 
-from jsonlogalert.exceptions import LogAlertConfigError
+from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError
 from jsonlogalert.logalertoutput import LogAlertOutput, LogAlertOutputToDevNull, LogAlertOutputToStdout
 from jsonlogalert.logalertoutput_file import LogAlertOutputToFile
 from jsonlogalert.logalertoutput_smtp import LogAlertOutputToSMTP
@@ -335,11 +335,16 @@ class LogService:
             for field, pattern in self.rewrite_fields:
                 # Rewrites can be applied to the same field more than once
                 field_value = newfields.get(field) if field in newfields else log_entry.rawfields.get(field)
-                matches = pattern.match(field_value) if field_value else None
-                if matches:
-                    named_groups = matches.groupdict()
-                    if named_groups:
-                        newfields.update(named_groups)
+
+                try:
+                    matches = pattern.match(field_value) if field_value else None
+                except TypeError as err:
+                    raise LogAlertParserError(f"Failed to rewrite field '{field}={field_value}': {err}") from err
+                else:
+                    if matches:
+                        named_groups = matches.groupdict()
+                        if named_groups:
+                            newfields.update(named_groups)
 
         return newfields
 
