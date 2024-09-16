@@ -14,7 +14,7 @@ from click_option_group import optgroup
 from jsonlogalert.exceptions import LogAlertConfigError
 from jsonlogalert.logsource import LogSource
 from jsonlogalert.logsource_journal import LogSourceSystemdJournal
-from jsonlogalert.utils import read_config_file
+from jsonlogalert.utils import read_config_file, resolve_rel_path
 
 JSONLOGALERT_VER = "0.1"
 
@@ -78,7 +78,7 @@ def resolve_bin(name_or_path: Path, conf_directive: str) -> Path:
 
     logging.debug(f"Resolved command '{name_or_path}' to '{which}'")
 
-    return Path(which) if which.startswith("/") else Path(which).resolve()
+    return resolve_rel_path(which)
 
 
 def _delete_tail_state_files(tail_state_dir: Path) -> None:

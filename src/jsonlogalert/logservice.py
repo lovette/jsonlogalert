@@ -21,7 +21,7 @@ from jsonlogalert.logalertoutput import LogAlertOutput, LogAlertOutputToDevNull,
 from jsonlogalert.logalertoutput_file import LogAlertOutputToFile
 from jsonlogalert.logalertoutput_smtp import LogAlertOutputToSMTP
 from jsonlogalert.logfieldrule import FieldRule
-from jsonlogalert.utils import read_config_file
+from jsonlogalert.utils import read_config_file, resolve_rel_path
 
 # These are in addition to SOURCE_FIELD_DEFAULTS.
 SERVICE_FIELD_DEFAULTS = {
@@ -140,7 +140,7 @@ class LogService:
         Returns:
             Path
         """
-        return self.service_confdir_path / self.service_config.get("select_rules_path", "select.yaml")
+        return resolve_rel_path(self.service_config.get("select_rules_path", "select.yaml"), self.service_confdir_path)
 
     @cached_property
     def pass_rules_path(self) -> Path:
@@ -149,7 +149,7 @@ class LogService:
         Returns:
             Path
         """
-        return self.service_confdir_path / self.service_config.get("pass_rules_path", "pass.yaml")
+        return resolve_rel_path(self.service_config.get("pass_rules_path", "pass.yaml"), self.service_confdir_path)
 
     @cached_property
     def drop_rules_path(self) -> Path:
@@ -158,7 +158,7 @@ class LogService:
         Returns:
             Path
         """
-        return self.service_confdir_path / self.service_config.get("drop_rules_path", "drop.yaml")
+        return resolve_rel_path(self.service_config.get("drop_rules_path", "drop.yaml"), self.service_confdir_path)
 
     @cached_property
     def rewrite_fields(self) -> Sequence[tuple[str, re.Pattern]]:

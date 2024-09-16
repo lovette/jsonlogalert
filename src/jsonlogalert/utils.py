@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from pathlib import Path
 
 import yaml
 
@@ -37,3 +34,22 @@ def read_config_file(config_path: Path) -> dict | None:
         raise LogAlertConfigError(f"{err}") from err
 
     return config
+
+
+def resolve_rel_path(name_or_path: str | Path, rel_to_dir: Path | None = None) -> Path:
+    """Resolve the path to a file given a file name and directory.
+
+    Args:
+        name_or_path (str | Path): Full path, relative path or just a file name.
+        rel_to_dir (Path | None, optional): Directory 'name_or_path' may be relative to. Defaults to None.
+
+    Returns:
+        Path
+    """
+    if not isinstance(name_or_path, Path):
+        name_or_path = Path(name_or_path)
+
+    if not name_or_path.is_absolute() and rel_to_dir:
+        name_or_path = rel_to_dir / name_or_path
+
+    return name_or_path.resolve() if ".." in name_or_path.parts else name_or_path
