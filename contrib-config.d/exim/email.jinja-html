@@ -1,0 +1,145 @@
+{%- set ns = namespace() -%}
+{%- set ns.tlasttimestamp = None -%}
+{%- set ns.tlastdate = None -%}
+{%- set ns.tlasttime = None -%}
+{%- set ns.tlastmsgid = None -%}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body, td {
+            font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+        }
+
+        td {
+            vertical-align: top;
+        }
+
+        td.date {
+            margin: 0px;
+            padding: 3pt;
+            font-weight: bold;
+            background-color: #cccccc;
+        }
+
+        td.time {
+            white-space: nowrap;
+            padding-right: 5pt;
+        }
+
+        td.msgid {
+            text-align: right;
+            padding-right: 5pt;
+            white-space: nowrap;
+        }
+
+        td.ditto {
+        }
+
+        td.message {
+            width: 100%;
+        }
+
+        td.error {
+            color: red;
+        }
+
+        td.warn {
+            color: #eba434;
+        }
+
+        table.fields td {
+            font-size: 8pt;
+        }
+    </style>
+</head>
+<body>
+    <table width="100%">
+        <tbody>
+
+{%- for e in log_entries -%}
+
+    {%- set ttimestamp = e.timestamp|format_iso(timespec="seconds") -%}
+    {%- set tdate = e.timestamp|format_date -%}
+    {%- set ttime = e.timestamp|format_time -%}
+    {%- set tmsgid = e.MSGID -%}
+
+    {%- if e.PRIORITY is none or e.PRIORITY == "info" -%}
+        {%- set tpriorityclass = "" -%}
+    {%- elif e.PRIORITY == "warn" -%}
+        {%- set tpriorityclass = "warn" -%}
+    {%- else -%}
+        {%- set tpriorityclass = "error" -%}
+    {%- endif -%}
+
+    {# Print header line for each new date #}
+    {%- if tdate != ns.tlastdate -%}
+    <tr>
+        <td colspan="3" class="date">{{ e.timestamp|format_date('%b %-d') }}</td>
+    </tr>
+    {%- endif -%}
+
+    <tr>
+        <td class="time">
+        {%- if ns.tlasttimestamp is none or ttimestamp != ns.tlasttimestamp -%}
+            {{ ttime }}
+        {%- endif -%}
+        </td>
+
+        {%- if tmsgid is none -%}
+        <td class="msgid">
+            -
+        {%- elif tmsgid != ns.tlastmsgid -%}
+        <td class="msgid">
+            {{ tmsgid|e }}
+        {%- else -%}
+        <td class="msgid ditto">
+            ...
+        {%- endif -%}
+        </td>
+
+        {%- if tpriorityclass|length -%}
+        <td class="message {{ tpriorityclass }}">
+        {%- else -%}
+        <td class="message">
+        {%- endif -%}
+            {%- if e.message is not none -%}
+            {{ e.message|e }}
+            {%- elif e.DELIVERY_STATUS is not none -%}
+            Delivery {{ e.DELIVERY_STATUS }}
+            {%- endif -%}
+        </td>
+    </tr>
+
+    {%- if e.fields -%}
+    <tr>
+        <td></td>
+        <td></td>
+        <td>
+            <table class="fields">
+            {%- for k, v in e.fields.items() -%}
+            <tr>
+                <td>{{ k|e }}</td>
+                <td>{{ v|e }}</td>
+            </tr>
+            {%- endfor -%}
+            </table>
+        </td>
+    </tr>
+    {%- endif -%}
+
+    {%- set ns.tlasttimestamp = ttimestamp -%}
+    {%- set ns.tlastdate = tdate -%}
+    {%- set ns.tlasttime = ttime -%}
+    {%- set ns.tlastmsgid = tmsgid -%}
+
+{%- endfor -%}
+
+        </tbody>
+    </table>
+</body>
+</html>

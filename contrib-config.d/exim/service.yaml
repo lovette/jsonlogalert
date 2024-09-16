@@ -1,0 +1,4 @@
+description: "exim mail server"
+output_template_file: "email.jinja-html"
+output_content_type: "html"
+enabled: True

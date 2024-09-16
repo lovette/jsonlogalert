@@ -1,0 +1,30 @@
+description: "cloudflared"
+output_template_file: "email.jinja-html"
+output_template_minify_html: True
+max_log_entries: 250
+
+rewrite_fields:
+  # "YYYY-MM-DDTHH:MM:SSZ INF MESSAGE"
+  - MESSAGE: (?P<CFISOTIMESTAMP>[-\d]+T[:\d]+Z)\s+(?P<CFPRIORITY>[A-Z]+)\s+(?P<MESSAGE>.+)$
+
+  # Extract fields from last to first.
+  # "MESSAGE connIndex=N connection=UUID event=N ip=IP location=WORD protocol=WORD"
+  - MESSAGE: (?P<MESSAGE>.+)\s+protocol=(?P<CFPROTOCOL>\w+)\s*$
+  - MESSAGE: (?P<MESSAGE>.+)\s+location=(?P<CFLOCATION>\w+)\s*$
+  - MESSAGE: (?P<MESSAGE>.+)\s+ip=(?P<CFIP>[:.\d]+)\s*$
+  - MESSAGE: (?P<MESSAGE>.+)\s+event=(?P<CFEVENT>[\d]+)\s*$
+  - MESSAGE: (?P<MESSAGE>.+)\s+connection=(?P<CFCONNECTION>[-\w]+)\s*$
+  - MESSAGE: (?P<MESSAGE>.+)\s+connIndex=(?P<CFCONNINDEX>[\d]+)\s*$
+
+  # "MESSAGE error="ERROR MESSAGE""
+  - MESSAGE: (?P<MESSAGE>.+)\s+error=\"(?P<CFERRORMESSAGE>.+)\"$
+
+conceal_fields:
+  - "CFCONNECTION"
+  - "CFCONNINDEX"
+  - "CFERRORMESSAGE"
+  - "CFEVENT"
+  - "CFIP"
+  - "CFISOTIMESTAMP"
+  - "CFPRIORITY"
+  - "CFPROTOCOL"

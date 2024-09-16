@@ -1,0 +1,157 @@
+{%- set ns = namespace() -%}
+{%- set ns.tlasttimestamp = None -%}
+{%- set ns.tlastdate = None -%}
+{%- set ns.tlasttime = None -%}
+{%- set ns.tlastservice = None -%}
+{%- set ns.tlastcfip = None -%}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body, td {
+            font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+        }
+
+        td {
+            vertical-align: top;
+        }
+
+        td.date {
+            margin: 0px;
+            padding: 3pt;
+            font-weight: bold;
+            background-color: #cccccc;
+        }
+
+        td.time {
+            white-space: nowrap;
+            padding-right: 5pt;
+        }
+
+        td.cfip {
+            text-align: right;
+            padding-right: 5pt;
+        }
+
+        td.ditto {
+        }
+
+        td.message {
+            width: 100%;
+        }
+
+        td.error {
+            color: red;
+        }
+
+        td.warn {
+            color: #eba434;
+        }
+
+        table.fields td {
+            font-size: 8pt;
+        }
+    </style>
+</head>
+<body>
+    <table width="100%">
+        <tbody>
+
+{%- for e in log_entries -%}
+
+    {%- set ttimestamp = e.timestamp|format_iso(timespec="seconds") -%}
+    {%- set tdate = e.timestamp|format_date -%}
+    {%- set ttime = e.timestamp|format_time -%}
+    {%- set tcfip = e.CFIP -%}
+
+    {%- if e._SYSTEMD_UNIT and e.SYSLOG_IDENTIFIER -%}
+        {%- set tservice = e.SYSLOG_IDENTIFIER ~ " [" ~ e._SYSTEMD_UNIT ~ "]" -%}
+    {%- else -%}
+        {%- set tservice = e._SYSTEMD_UNIT or e.SYSLOG_IDENTIFIER-%}
+    {%- endif -%}
+
+    {%- if e.CFPRIORITY is none or e.CFPRIORITY == "INF" -%}
+        {%- set tpriorityclass = "" -%}
+    {%- elif e.CFPRIORITY == "WRN" -%}
+        {%- set tpriorityclass = "warn" -%}
+    {%- else -%}
+        {%- set tpriorityclass = "error" -%}
+    {%- endif -%}
+
+    {%- if tservice != ns.tlastservice -%}
+    <tr>
+        <td colspan="3" class="date">{{ tservice }}</td>
+    </tr>
+    {%- endif -%}
+
+    {# Print header line for each new date #}
+    {%- if tdate != ns.tlastdate -%}
+    <tr>
+        <td colspan="3" class="date">{{ e.timestamp|format_date('%b %-d') }}</td>
+    </tr>
+    {%- endif -%}
+
+    <tr>
+        <td class="time">
+        {%- if ns.tlasttimestamp is none or ttimestamp != ns.tlasttimestamp -%}
+            {{ ttime }}
+        {%- endif -%}
+        </td>
+
+        {%- if tcfip is none -%}
+        <td class="cfip">
+            -
+        {%- elif tcfip != ns.tlastcfip -%}
+        <td class="cfip">
+            {{ tcfip|e }}
+        {%- else -%}
+        <td class="cfip ditto">
+            ...
+        {%- endif -%}
+        </td>
+
+        {%- if tpriorityclass|length -%}
+        <td class="message {{ tpriorityclass }}">
+        {%- else -%}
+        <td class="message">
+        {%- endif -%}
+            {{ e.message|e }}
+            {%- if e.CFERRORMESSAGE is not none -%}
+                : {{ e.CFERRORMESSAGE|e }}
+            {%- endif -%}
+        </td>
+    </tr>
+
+    {%- if e.fields -%}
+    <tr>
+        <td></td>
+        <td></td>
+        <td>
+            <table class="fields">
+            {%- for k, v in e.fields.items() -%}
+            <tr>
+                <td>{{ k|e }}</td>
+                <td>{{ v|e }}</td>
+            </tr>
+            {%- endfor -%}
+            </table>
+        </td>
+    </tr>
+    {%- endif -%}
+
+    {%- set ns.tlasttimestamp = ttimestamp -%}
+    {%- set ns.tlastdate = tdate -%}
+    {%- set ns.tlasttime = ttime -%}
+    {%- set ns.tlastservice = tservice -%}
+    {%- set ns.tlastcfip = tcfip -%}
+
+{%- endfor -%}
+
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,5 @@
+- DELIVERY_STATUS:
+  - deferred
+  - received
+  - success
+- MESSAGE: Completed

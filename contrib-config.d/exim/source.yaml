@@ -1,0 +1,8 @@
+description: "exim mail server logs"
+logfiles:
+  - /ddiary/log/exim/mainlog
+  - /ddiary/log/exim/paniclog
+  - /ddiary/log/exim/rejectlog
+conceal_fields:
+  - MSGID
+  - PRIORITY

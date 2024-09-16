@@ -1,0 +1,16 @@
+# Caddyserver output diagnostic logs to systemd-journal.
+# Access logs are output to JSON files.
+
+description: "caddy web server access logs"
+timestamp_field: "tsiso"
+message_field: "msg"
+logfiles:
+  - /ddiary/log/caddy/webapp-admin-http/access.log
+  - /ddiary/log/caddy/webapp-webhook-http/access.log
+  - /ddiary/log/caddy/webapp-www-http/access.log
+conceal_fields:
+  - level
+  - logger
+  - request
+  - status
+  - tsiso
