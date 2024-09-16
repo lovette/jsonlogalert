@@ -16,17 +16,13 @@ if TYPE_CHECKING:
 
 from click import echo
 
+from jsonlogalert.confcheck import SERVICE_CONF_DEFAULTS, service_conf_check, service_conf_clean
 from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError
 from jsonlogalert.logalertoutput import LogAlertOutput, LogAlertOutputToDevNull, LogAlertOutputToStdout
 from jsonlogalert.logalertoutput_file import LogAlertOutputToFile
 from jsonlogalert.logalertoutput_smtp import LogAlertOutputToSMTP
 from jsonlogalert.logfieldrule import FieldRule
 from jsonlogalert.utils import read_config_file, resolve_rel_path
-
-# These are in addition to SOURCE_FIELD_DEFAULTS.
-SERVICE_FIELD_DEFAULTS = {
-    "rewrite_fields": None,
-}
 
 ######################################################################
 # LogService
@@ -140,7 +136,8 @@ class LogService:
         Returns:
             Path
         """
-        return resolve_rel_path(self.service_config.get("select_rules_path", "select.yaml"), self.service_confdir_path)
+        select_rules_path = self.service_config.get("select_rules_path")
+        return resolve_rel_path(select_rules_path or "select.yaml", self.service_confdir_path)
 
     @cached_property
     def pass_rules_path(self) -> Path:
@@ -149,7 +146,8 @@ class LogService:
         Returns:
             Path
         """
-        return resolve_rel_path(self.service_config.get("pass_rules_path", "pass.yaml"), self.service_confdir_path)
+        pass_rules_path = self.service_config.get("pass_rules_path")
+        return resolve_rel_path(pass_rules_path or "pass.yaml", self.service_confdir_path)
 
     @cached_property
     def drop_rules_path(self) -> Path:
@@ -158,7 +156,8 @@ class LogService:
         Returns:
             Path
         """
-        return resolve_rel_path(self.service_config.get("drop_rules_path", "drop.yaml"), self.service_confdir_path)
+        drop_rules_path = self.service_config.get("drop_rules_path")
+        return resolve_rel_path(drop_rules_path or "drop.yaml", self.service_confdir_path)
 
     @cached_property
     def rewrite_fields(self) -> Sequence[tuple[str, re.Pattern]]:
@@ -199,6 +198,9 @@ class LogService:
         """
         self.service_config = self._load_config_json(self.service_config_path)
 
+        # Sanity check configuration settings (it's easy to get confused what option goes where!)
+        service_conf_check(self)
+
         merged_fields = {}
 
         # Always conceal timestamp and message
@@ -214,16 +216,10 @@ class LogService:
                         merged_fields[directive] = set(fields)
 
         # Merge configs in order of precedence
-        self.service_config = SERVICE_FIELD_DEFAULTS | self.log_source.source_config | self.service_config | cli_config | merged_fields
+        self.service_config = SERVICE_CONF_DEFAULTS | self.log_source.source_config | self.service_config | cli_config | merged_fields
 
-        # These do not pertain to services and don't need to show up in print_conf()
-        for remove_directive in ["onelog", "logfiles", "sources", "services"]:
-            if remove_directive in self.service_config:
-                del self.service_config[remove_directive]
-        for remove_prefix in ["tail_"]:
-            for k in list(self.service_config.keys()):
-                if k.startswith(remove_prefix):
-                    del self.service_config[k]
+        # Delete settings that do not pertain to services and don't need to show up in print_conf()
+        service_conf_clean(self)
 
         self.select_rules = self._build_rules(self.select_rules_path)
         self.pass_rules = self._build_rules(self.pass_rules_path)

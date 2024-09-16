@@ -18,6 +18,7 @@ from click import echo
 if TYPE_CHECKING:
     from collections import List
 
+from jsonlogalert.confcheck import SOURCE_CONF_DEFAULTS, source_conf_check, source_conf_clean
 from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError, LogAlertTailError
 from jsonlogalert.logentry import LogEntry
 from jsonlogalert.logservice import LogService
@@ -29,43 +30,6 @@ INCLUDE_FILTER_ALL = "*"
 TIMESTAMP_FIELD_DEFAULT = "TIMESTAMP"
 MESSAGE_FIELD_DEFAULT = "MESSAGE"
 
-# Services will augment these with SERVICE_FIELD_DEFAULTS.
-SOURCE_FIELD_DEFAULTS = {
-    "capture_fields": None,
-    "conceal_fields": None,
-    "description": None,
-    "ignore_fields": None,
-    "journal_dir": None,
-    "max_log_entries": 250,
-    "onelog": False,
-    "output_content_type": None,
-    "output_devnull": False,
-    "output_file_dir": None,
-    "output_file_name": None,
-    "output_smtp_auth_password": None,
-    "output_smtp_auth_ssl": False,
-    "output_smtp_auth_tls": False,
-    "output_smtp_auth_username": None,
-    "output_smtp_host": "localhost",
-    "output_smtp_port": 25,
-    "output_smtp_rcpt_name": None,
-    "output_smtp_rcpt": None,
-    "output_smtp_sender_name": None,
-    "output_smtp_sender": None,
-    "output_smtp_subject": "Unusual %SERVICEDESC% activity",
-    "output_stdout": False,
-    "output_template_file": None,
-    "output_template_minify_html": False,
-    "tail_debug": False,
-    "tail_file_bin": "logtail2",
-    "tail_file_paths": None,
-    "tail_ignore": False,
-    "tail_journal_bin": "logtail-journal",
-    "tail_journal_dir": None,
-    "tail_journal_since": "boot",
-    "tail_reset": False,
-    "tail_state_dir": "/var/lib/misc",
-}
 
 ######################################################################
 # LogSource
@@ -160,7 +124,7 @@ class LogSource:
         Returns:
             str
         """
-        return self.source_config.get("timestamp_field", self.timestamp_field_default)
+        return self.source_config.get("timestamp_field") or self.timestamp_field_default
 
     @cached_property
     def message_field(self) -> str:
@@ -169,7 +133,7 @@ class LogSource:
         Returns:
             str
         """
-        return self.source_config.get("message_field", self.message_field_default)
+        return self.source_config.get("message_field") or self.message_field_default
 
     @cached_property
     def source_parser_path(self) -> Path:
@@ -207,13 +171,14 @@ class LogSource:
             cli_config (dict): Command line configuration options.
             default_config (dict): Default configuration options.
         """
-        # Merge configs in order of precedence (before services are loaded!)
-        self.source_config = SOURCE_FIELD_DEFAULTS | default_config | self.source_config | cli_config
+        # Sanity check configuration settings (it's easy to get confused what option goes where!)
+        source_conf_check(self)
 
-        # These are unnecessary at runtime and don't need to show up in print_conf()
-        for remove_directive in ["sources", "services"]:
-            if remove_directive in self.source_config:
-                del self.source_config[remove_directive]
+        # Merge configs in order of precedence (before services are loaded!)
+        self.source_config = SOURCE_CONF_DEFAULTS | default_config | self.source_config | cli_config
+
+        # Delete settings that do not pertain to sources and don't need to show up in print_conf()
+        source_conf_clean(self)
 
         if self.source_parser_path.is_file():
             self.load_parser()

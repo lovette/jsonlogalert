@@ -11,6 +11,7 @@ import click
 from click.core import ParameterSource
 from click_option_group import optgroup
 
+from jsonlogalert.confcheck import MAIN_OPTS_DIRECTIVES, main_conf_check
 from jsonlogalert.exceptions import LogAlertConfigError
 from jsonlogalert.logsource import LogSource
 from jsonlogalert.logsource_journal import LogSourceSystemdJournal
@@ -459,21 +460,17 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     cli_config = {}
     default_config = {}
-    global_opts = {
-        "config_dir",
-        "log_file_streams",
-        "print_conf",
-        "print_rules",
-        "verbose",
-    }
 
     # Command line options override config file options (for sources and services too)
     for param, param_value in ctx.params.items():
-        if param not in global_opts:
+        if param not in MAIN_OPTS_DIRECTIVES:
             if ctx.get_parameter_source(param) == ParameterSource.COMMANDLINE:
                 cli_config[param] = param_value
             else:
                 default_config[param] = param_value
+
+    # Click only loads options it knows about, so this is mostly an assertion
+    main_conf_check(cli_config, default_config)
 
     # Command line overrides source/service output configurations
     if output_devnull:

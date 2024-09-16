@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from io import TextIOWrapper
     from pathlib import Path
 
+from jsonlogalert.confcheck import FILE_SOURCE_CONFFILE_DIRECTIVES, conf_del_keys
 from jsonlogalert.logsource import LogSource
 
 ######################################################################
@@ -44,10 +45,7 @@ class LogSourceTextFile(LogSource):
         super().load_conf(cli_config, default_config)
 
         # These are unnecessary at runtime and don't need to show up in print_conf()
-        for remove_prefix in ["tail_journal"]:
-            for k in list(self.source_config.keys()):
-                if k.startswith(remove_prefix):
-                    del self.source_config[k]
+        conf_del_keys(self.source_config, set(self.source_config.keys()) - FILE_SOURCE_CONFFILE_DIRECTIVES)
 
     def tail_source(self) -> None:
         """Tail source 'logfiles' as configured.
