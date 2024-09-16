@@ -130,7 +130,7 @@ class LogSource:
         except KeyError:
             pass
 
-        return super().__getattr__(key)
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'")
 
     # Cannot be a cached_property because name changes after deaggregate()
     @property
