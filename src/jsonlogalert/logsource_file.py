@@ -53,7 +53,7 @@ class LogSourceTextFile(LogSource):
         """Tail source 'logfiles' as configured.
 
         Raises:
-            LogAlertRuntimeError: Tail failed.
+            LogAlertTailError: Tail failed.
         """
         if not (self.logfiles or self.logstreams):
             logging.warning(f"Log source '{self.name}' has no logs to read")
@@ -80,7 +80,7 @@ class LogSourceTextFile(LogSource):
             log_file_path (Path): File path.
 
         Raises:
-            LogAlertRuntimeError: Tail failed.
+            LogAlertTailError: Tail failed.
         """
         self.log_debug(f"Tailing {log_file_path}")
 

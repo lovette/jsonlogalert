@@ -11,3 +11,7 @@ class LogAlertParserError(LogAlertRuntimeError):
 
 class LogAlertConfigError(LogAlertRuntimeError):
     """Configuration exception."""
+
+
+class LogAlertTailError(LogAlertRuntimeError):
+    """Tail file exception."""

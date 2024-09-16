@@ -18,7 +18,7 @@ from click import echo
 if TYPE_CHECKING:
     from collections import List
 
-from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError
+from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError, LogAlertTailError
 from jsonlogalert.logentry import LogEntry
 from jsonlogalert.logservice import LogService
 from jsonlogalert.logsourceparser import LogSourceParser
@@ -268,8 +268,31 @@ class LogSource:
             exec_args (tuple[str]): Tail command line.
 
         Raises:
-            LogAlertRuntimeError: Tail failed.
+            LogAlertTailError: Tail failed.
         """
+
+        def _tail_exc_msg(message: str, err: str | Exception, retcode: int | None) -> str:
+            """Return tail exec failure exception message.
+
+            Args:
+                message (str): Error message.
+                err (str | Exception): Failure exception or stderr output.
+                retcode (int | None): Pipe return code or None.
+
+            Returns:
+                str
+            """
+            msg_parts = [
+                message,
+                str(err).rstrip(),
+                f"'{' '.join(exec_args)}'",
+            ]
+
+            if retcode is not None:
+                msg_parts.append(f"exit code {retcode}")
+
+            return ": ".join(msg_parts)
+
         pipe_options = {
             "stdin": None,
             "stdout": subprocess.PIPE,
@@ -278,30 +301,30 @@ class LogSource:
             "universal_newlines": True,
         }
 
-        retcode = 100  # arbitrary
-        stderr_data = "Popen failed"
-
         self.log_debug(f"Executing '{' '.join(exec_args)}'")
 
-        with subprocess.Popen(exec_args, **pipe_options) as ps_tail:  # noqa: S603
-            try:
-                self.parse_stream(ps_tail.stdout, "<stdout>")
-            except AssertionError:
-                raise
-            except Exception as err:
-                # Wait for process to exit
-                stderr_data = ps_tail.communicate()[1]
-                retcode = ps_tail.returncode
+        try:
+            with subprocess.Popen(exec_args, **pipe_options) as ps_tail:  # noqa: S603
+                try:
+                    self.parse_stream(ps_tail.stdout, "<stdout>")
 
-                if retcode == 0:
-                    raise LogAlertRuntimeError(f"Parse tail stream failed: {err}") from err
-            else:
-                # Wait for process to exit
-                stderr_data = ps_tail.communicate()[1]
-                retcode = ps_tail.returncode
+                except Exception as err:
+                    # Wait for process to exit
+                    stderr_data = ps_tail.communicate()[1]
+                    retcode = ps_tail.returncode
 
-        if retcode != 0:
-            raise LogAlertRuntimeError(f"Read tail failed: {stderr_data} ({' '.join(exec_args)} exited {retcode})")
+                    if retcode == 0:
+                        raise LogAlertTailError(_tail_exc_msg("Parse tail stream failed", err, None)) from err
+                else:
+                    # Wait for process to exit
+                    stderr_data = ps_tail.communicate()[1]
+                    retcode = ps_tail.returncode
+
+                    if retcode != 0:
+                        raise LogAlertTailError(_tail_exc_msg("Exec tail failed", stderr_data, retcode))
+
+        except (TypeError, ValueError) as err:
+            raise LogAlertTailError(_tail_exc_msg("Exec tail Popen failed", err, retcode)) from err
 
     def parse_stream(self, log_file_stream: io.TextIOWrapper, stream_name: str) -> None:  # noqa: C901
         """Parse a file stream where each line is a JSON structured message.

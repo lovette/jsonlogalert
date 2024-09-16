@@ -80,7 +80,7 @@ class LogSourceSystemdJournal(LogSource):
         """Tail systemd journal as configured.
 
         Raises:
-            LogAlertRuntimeError: Tail failed.
+            LogAlertTailError: Tail failed.
         """
         self.log_debug(f"Tailing systemd-journal: {self.journal_dir or 'default'}")
 
