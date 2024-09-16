@@ -31,6 +31,11 @@ JOURNAL_FIELD_CONVERTERS = journal.DEFAULT_CONVERTERS | {
 JOURNAL_TIMESTAMP_FIELD_DEFAULT = "__REALTIME_TIMESTAMP"
 JOURNAL_MESSAGE_FIELD_DEFAULT = "MESSAGE"
 
+# Map non-printable characters to None so translate() can remove them.
+# Thanks to https://stackoverflow.com/a/54451873/437518
+_NONPRINTABLE_CHARACTERS = {i: None for i in range(sys.maxunicode + 1) if not chr(i).isprintable() and chr(i) not in {"\n", "\r"}}
+
+
 ######################################################################
 # LogSourceSystemdJournal
 
@@ -95,6 +100,9 @@ class LogSourceSystemdJournal(LogSource):
 
         exec_args = [str(self.tail_journal_bin)]
 
+        # Be explicit that we want *all* data.
+        exec_args.append("-a")
+
         if self.tail_journal_since:
             if self.tail_journal_since == "boot":
                 self.log_debug("Tail will start at the current boot")
@@ -125,3 +133,29 @@ class LogSourceSystemdJournal(LogSource):
             exec_args.extend(("-D", str(self.journal_dir)))
 
         self.tail_exec(tuple(exec_args))
+
+    def apply_field_converters(self, rawfields: dict, log_line: str) -> None:
+        """Convert field values to native types using `self.field_converters`.
+
+        Args:
+            rawfields (dict): Log entry fields and values.
+            log_line (str): Log line.
+        """
+        # According to the journalctl man page the option '--all' should decode "blob data" best it can.
+        # The source code supports this understanding (see json_escape):
+        # https://github.com/systemd/systemd/blob/9671efff78e44310743d5e49d512846615777263/src/shared/logs-show.c#L1
+        #
+        # But as I'm testing this on RHEL 9.4 in 9/2024, "MESSAGE" fields are decoded **unless**
+        # the output format is JSON. I can't explain this behavior.
+        #
+        # An apparent fix was applied in 2016.
+        # https://github.com/systemd/systemd/issues/3416
+        #
+        # Vector implemented a workaround for this issue in 2020.
+        # https://github.com/vectordotdev/vector/issues/1714
+
+        for field in self.blob_fields:
+            if field in rawfields and isinstance(rawfields[field], list):
+                rawfields[field] = bytes(rawfields[field]).decode(errors="replace").translate(_NONPRINTABLE_CHARACTERS)
+
+        super().apply_field_converters(rawfields, log_line)

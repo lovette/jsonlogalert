@@ -29,6 +29,7 @@ MAX_PARSE_STREAM_FAIL_MSGS = 10
 INCLUDE_FILTER_ALL = "*"
 TIMESTAMP_FIELD_DEFAULT = "TIMESTAMP"
 MESSAGE_FIELD_DEFAULT = "MESSAGE"
+DEFAULT_BLOB_FIELDS = {MESSAGE_FIELD_DEFAULT}
 
 
 ######################################################################
@@ -134,6 +135,17 @@ class LogSource:
             str
         """
         return self.source_config.get("message_field") or self.message_field_default
+
+    @cached_property
+    def blob_fields(self) -> set:
+        """Set of blob fields.
+
+        Returns:
+            set
+        """
+        blob_fields = self.source_config.get("blob_fields")
+        blob_fields = set(blob_fields) if blob_fields else set()
+        return blob_fields | DEFAULT_BLOB_FIELDS
 
     @cached_property
     def source_parser_path(self) -> Path:
@@ -263,6 +275,7 @@ class LogSource:
             "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE,
             "bufsize": 1,
+            "encoding": "utf-8",
             "universal_newlines": True,
         }
 
@@ -313,7 +326,7 @@ class LogSource:
 
             try:
                 fields = self.parse_line(log_line)
-                self._apply_field_converters(fields, log_line)
+                self.apply_field_converters(fields, log_line)
                 log_entry = LogEntry(fields, self.timestamp_field, self.message_field)
                 claimed = any(service.claim_entry(log_entry) for service in self.services)
             except LogAlertParserError as err:
@@ -356,7 +369,7 @@ class LogSource:
 
         return fields
 
-    def _apply_field_converters(self, rawfields: dict, log_line: str) -> None:
+    def apply_field_converters(self, rawfields: dict, log_line: str) -> None:
         """Convert field values to native types using `self.field_converters`.
 
         Args:

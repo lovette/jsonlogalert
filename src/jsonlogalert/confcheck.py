@@ -114,6 +114,7 @@ SOURCE_CONF_DEFAULTS = (
     COMMAND_OPTS_DEFAULTS
     | SERVICE_CONF_DEFAULTS
     | {
+        "blob_fields": None,
         "journal_dir": None,
         "logfiles": (),
         "message_field": None,

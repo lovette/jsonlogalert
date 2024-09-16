@@ -16,6 +16,7 @@ ARG_SINCE_ALL=false
 ARG_SINCE_BOOT=false
 ARG_SINCE_TODAY=false
 ARG_DRY_RUN=false
+ARG_ALL_FIELDS=false
 ARG_CURSOR_FILE="/var/lib/misc/logtail-journal-cursor"
 ARG_JOURNAL_DIR=
 RESET_CURSOR=false
@@ -31,6 +32,7 @@ USAGE
   logtail-journal [OPTIONS]
 
 OPTIONS
+  -a        Show all fields in full, even if they include unprintable characters or are very long.
   -A        Print entire log (ignores cursor).
   -b        Print lines since last boot (ignores cursor).
   -d        Print journalctl command line and exit.
@@ -62,8 +64,9 @@ function die()
 ######################################################################
 
 # Parse command line options
-while getopts "AbdD:ho:prt?" opt; do
+while getopts "aAbdD:ho:prt?" opt; do
 	case "$opt" in
+		a) ARG_ALL_FIELDS=true ;;
 		A) ARG_SINCE_ALL=true ;;
 		b) ARG_SINCE_BOOT=true ;;
 		d) ARG_SHOW_COMMAND=true ;;
@@ -86,7 +89,7 @@ journalctl_args+=("--output=$ARG_JSON_FORMAT")
 
 # Show all fields in full, even if they include unprintable characters or are very long.
 # (json output sets fields larger than 4096 bytes to `null` by default)
-journalctl_args+=("--all")
+[ "$ARG_ALL_FIELDS" = true ] && journalctl_args+=("--all")
 
 # Default first run to -r
 if [ ! -f "$ARG_CURSOR_FILE" ] || [ ! -s "$ARG_CURSOR_FILE" ]; then
