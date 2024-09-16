@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -9,7 +10,12 @@ from functools import cached_property
 from uuid import UUID
 
 from jsonlogalert.logsource import LogSource
-from systemd import journal  # type: ignore[reportMissingImports]
+
+try:
+    from systemd import journal  # type: ignore[reportMissingImports]
+except ImportError as err:
+    print(f"Python ImportError: {err}; see install instructions for https://github.com/systemd/python-systemd", file=sys.stderr)  # noqa: T201
+    sys.exit(1)
 
 # Known fields can be converted to native types (int, datetime, etc.)
 # https://www.freedesktop.org/software/systemd/man/systemd.journal-fields.html
