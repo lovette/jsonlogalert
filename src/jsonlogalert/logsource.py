@@ -20,7 +20,7 @@ from jsonlogalert.exceptions import LogAlertRuntimeError
 if TYPE_CHECKING:
     from collections import List
 
-
+from jsonlogalert.exceptions import LogAlertParserError
 from jsonlogalert.logentry import LogEntry
 from jsonlogalert.logservice import LogService
 from jsonlogalert.logsourceparser import LogSourceParser
@@ -326,9 +326,9 @@ class LogSource:
 
             try:
                 fields = self.parse_line(log_line)
-            except LogAlertRuntimeError as err:
+            except LogAlertParserError as err:
                 if fail_line_count <= MAX_PARSE_STREAM_FAIL_MSGS:
-                    self.log_warning(f"Failed to read log entry (line {line_count}): {err}")
+                    self.log_warning(f"Failed to parse log entry (line {line_count}): {err}")
                     if fail_line_count == MAX_PARSE_STREAM_FAIL_MSGS:
                         self.log_warning(f">{MAX_PARSE_STREAM_FAIL_MSGS} warnings; failure messages will be suppressed")
 
@@ -362,21 +362,19 @@ class LogSource:
             log_line (str): Log entry from source.
 
         Raises:
-            LogAlertRuntimeError: Parse failed.
+            LogAlertParserError: Parse failed.
 
         Returns:
             dict
         """
-        fields_or_exception = self.source_parser.parse_line(log_line)
+        fields = self.source_parser.parse_line(log_line)
 
-        if not fields_or_exception:
-            raise LogAlertRuntimeError("Failed to convert log line to dict")
-        if isinstance(fields_or_exception, Exception):
-            raise LogAlertRuntimeError(f"{fields_or_exception}")
-        if not isinstance(fields_or_exception, dict):
-            raise LogAlertRuntimeError("Parser did not return a dict")
+        if not fields:
+            raise LogAlertParserError("Parser returned an empty dict")
+        if not isinstance(fields, dict):
+            raise LogAlertParserError(f"Parser returned a {type(fields).__name__}; expected 'dict'")
 
-        return fields_or_exception
+        return fields
 
     def create_log_entry(self, rawfields: dict) -> LogEntry:
         """Create a LogEntry object from a JSON string.

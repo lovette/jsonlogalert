@@ -23,19 +23,21 @@ class LogSourceParser:
         # Converters will be applied to captured fields
         self.field_converters = None
 
-    def parse_line(self, log_line: str) -> dict | LogAlertParserError:
+    def parse_line(self, log_line: str) -> dict:
         """Parse source log entry into a dict of structured fields.
 
         Args:
             log_line (str): Log entry from source.
 
+        Raises:
+            LogAlertParserError: Parse failure.
+
         Returns:
             dict: Parse success.
-            LogAlertParserError: Parse failure.
         """
         try:
             fields = json.loads(log_line)
         except json.JSONDecodeError as err:
-            return LogAlertParserError(f"{err}: {log_line}"), None
+            raise LogAlertParserError(f"{err}: '{log_line}'") from err
 
         return fields
