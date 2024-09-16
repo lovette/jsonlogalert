@@ -342,8 +342,9 @@ class LogSource:
         fail_line_count = 0
         unclaimed_line_count = 0
 
-        for log_line in log_file_stream:
+        for stream_line in log_file_stream:
             line_count += 1
+            log_line = stream_line.rstrip()
 
             try:
                 fields = self.parse_line(log_line)

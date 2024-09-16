@@ -35,9 +35,12 @@ class LogSourceParser:
         Returns:
             dict: Parse success.
         """
+        if not (log_line.startswith("{") and log_line.endswith("}")):
+            raise LogAlertParserError(f"Expected JSON dict: '{log_line}'")
+
         try:
             fields = json.loads(log_line)
         except json.JSONDecodeError as err:
-            raise LogAlertParserError(f"{err}: '{log_line}'") from err
+            raise LogAlertParserError(f"Invalid JSON? {err}: '{log_line}'") from err
 
         return fields
