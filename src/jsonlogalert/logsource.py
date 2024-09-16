@@ -326,6 +326,7 @@ class LogSource:
 
             try:
                 fields = self.parse_line(log_line)
+                self._apply_field_converters(fields, log_line)
             except LogAlertParserError as err:
                 if fail_line_count <= MAX_PARSE_STREAM_FAIL_MSGS:
                     self.log_warning(f"Failed to parse log entry (line {line_count}): {err}")
@@ -336,7 +337,7 @@ class LogSource:
             else:
                 claimed = False
 
-                log_entry = self.create_log_entry(fields)
+                log_entry = LogEntry(fields, self.timestamp_field, self.message_field)
 
                 # Add line to service that claims it
                 for service in self.log_services:
@@ -376,22 +377,21 @@ class LogSource:
 
         return fields
 
-    def create_log_entry(self, rawfields: dict) -> LogEntry:
-        """Create a LogEntry object from a JSON string.
+    def _apply_field_converters(self, rawfields: dict, log_line: str) -> None:
+        """Convert field values to native types using `self.field_converters`.
 
         Args:
-            rawfields (dict): Log line fields and values.
-
-        Returns:
-            LogEntry
+            rawfields (dict): Log entry fields and values.
+            log_line (str): Log line.
         """
         # Convert fields to native types
         if self.field_converters:
             for field, fn in self.field_converters.items():
                 if field in rawfields:
-                    rawfields[field] = fn(rawfields[field])
-
-        return LogEntry(rawfields, self.timestamp_field, self.message_field)
+                    try:
+                        rawfields[field] = fn(rawfields[field])
+                    except ValueError as err:
+                        raise LogAlertParserError(f"{err}: '{log_line}'") from err
 
     def tail_source(self) -> None:
         """Tail log source as configured.
