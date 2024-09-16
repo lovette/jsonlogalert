@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from click import echo
 from jinja2 import Template, TemplateNotFound
 
-from jsonlogalert.exceptions import LogAlertRuntimeError
+from jsonlogalert.exceptions import LogAlertConfigError
 from jsonlogalert.jinjaenvironment import LogAlertJinjaEnvironment
 
 if TYPE_CHECKING:
@@ -111,15 +111,15 @@ class LogAlertOutput:
         """Load template.
 
         Raises:
-            LogAlertRuntimeError
+            LogAlertConfigError
         """
         if not self.output_template_file:
-            self.raise_error("Invalid configuration", "'output_template_file' is not set")
+            self.config_error("Invalid configuration", "'output_template_file' is not set")
 
         try:
             self.jinja_template = self.jinja_env.get_template(self.output_template_file)
         except TemplateNotFound as err:
-            self.raise_error("Failed to load output template", err)
+            self.config_error("Failed to load output template", err)
 
     def render_template(self) -> str:
         """Render content for service output.
@@ -172,19 +172,19 @@ class LogAlertOutput:
         """
         logging.error(f"{self.log_service.fullname}: {message}")
 
-    def raise_error(self, message: str, err: str | Exception | None = None) -> None:
-        """Raise a 'LogAlertRuntimeError' exception related to this output.
+    def config_error(self, message: str, err: str | Exception | None = None) -> None:
+        """Raise a 'LogAlertConfigError' exception related to this output.
 
         Args:
             message (str): Message.
             err (str | Exception | None): Error message or exception.
 
         Raises:
-            LogAlertRuntimeError
+            LogAlertConfigError
         """
         if err:
-            raise LogAlertRuntimeError(f"{self.log_service.fullname}: {message}: {err}")
-        raise LogAlertRuntimeError(f"{self.log_service.fullname}: {message}")
+            raise LogAlertConfigError(f"{self.log_service.fullname}: {message}: {err}")
+        raise LogAlertConfigError(f"{self.log_service.fullname}: {message}")
 
 
 ######################################################################

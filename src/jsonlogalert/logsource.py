@@ -15,12 +15,10 @@ from functools import cached_property
 
 from click import echo
 
-from jsonlogalert.exceptions import LogAlertRuntimeError
-
 if TYPE_CHECKING:
     from collections import List
 
-from jsonlogalert.exceptions import LogAlertParserError
+from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError
 from jsonlogalert.logentry import LogEntry
 from jsonlogalert.logservice import LogService
 from jsonlogalert.logsourceparser import LogSourceParser
@@ -237,8 +235,8 @@ class LogSource:
             message = f"Failed to load parser for log source '{self.name}': {self.source_parser_path}: {err}"
 
             if isinstance(err, Exception):
-                raise LogAlertRuntimeError(message) from err
-            raise LogAlertRuntimeError(message)
+                raise LogAlertConfigError(message) from err
+            raise LogAlertConfigError(message)
 
         spec = importlib.util.spec_from_file_location(self.source_parser_path.stem, self.source_parser_path)
 
@@ -425,19 +423,19 @@ class LogSource:
     def validate_conf(self) -> None:
         """Review source configuration directives and see if they make sense."""
         if not self.message_field_default:
-            raise LogAlertRuntimeError(f"{self.name}: Log source 'message_field' directive is not set.")
+            self.config_error("'message_field' directive is not set.")
 
         if not self.timestamp_field_default:
-            raise LogAlertRuntimeError(f"{self.name}: Log source 'timestamp_field' directive is not set.")
+            self.config_error("'timestamp_field' directive is not set.")
 
         if not self.tail_state_dir:
-            raise LogAlertRuntimeError("'tail_state_dir' directive is not set.")
+            self.config_error("'tail_state_dir' directive is not set.")
         if not self.tail_state_dir.is_dir():
-            raise LogAlertRuntimeError(f"{self.tail_state_dir}: No such directory")
+            self.config_error(f"{self.tail_state_dir}: No such directory")
 
         catchalls = [service.name for service in self.log_services if service.is_catchall]
         if len(catchalls) > 1:
-            self.raise_error(f"{len(catchalls)} services are configured to claim all log entries: [{', '.join(catchalls)}]")
+            self.config_error(f"{len(catchalls)} services are configured to claim all log entries: [{', '.join(catchalls)}]")
 
     def force_enable(self) -> None:
         """Enable source and all it's services."""
@@ -521,19 +519,19 @@ class LogSource:
         """
         logging.error(f"{self.name}: {message}")
 
-    def raise_error(self, message: str, err: str | Exception | None = None) -> None:
-        """Raise a 'LogAlertRuntimeError' exception related to this source.
+    def config_error(self, message: str, err: str | Exception | None = None) -> None:
+        """Raise a 'LogAlertConfigError' exception related to this source.
 
         Args:
             message (str): Message.
             err (str | Exception | None): Error message or exception.
 
         Raises:
-            LogAlertRuntimeError
+            LogAlertConfigError
         """
         if err:
-            raise LogAlertRuntimeError(f"{self.name}: {message}: {err}")
-        raise LogAlertRuntimeError(f"{self.name}: {message}")
+            raise LogAlertConfigError(f"{self.name}: {message}: {err}")
+        raise LogAlertConfigError(f"{self.name}: {message}")
 
     ######################################################################
     # Helper functions
@@ -549,7 +547,7 @@ class LogSource:
             Optional[LogSource]: A LogSource object or None if directory does not appear to be a source.
 
         Raises:
-            LogAlertRuntimeError: Failed to load log source configuration.
+            LogAlertConfigError: Failed to load log source configuration.
         """
         assert source_dir.is_dir()
 
@@ -557,8 +555,8 @@ class LogSource:
 
         try:
             source_config = read_config_file(source_config_path)
-        except LogAlertRuntimeError as err:
-            raise LogAlertRuntimeError(f"{source_dir.name}: Failed to open '{source_config_path.name}': {err}") from err
+        except LogAlertConfigError as err:
+            raise LogAlertConfigError(f"{source_dir.name}: Failed to open '{source_config_path.name}': {err}") from err
 
         if not source_config:
             # Not fatal
@@ -590,7 +588,7 @@ class LogSource:
             tuple[LogSource]
 
         Raises:
-            LogAlertRuntimeError: Failed to load sources.
+            LogAlertConfigError: Failed to load sources.
         """
         assert config_dir.is_dir()
 
@@ -598,7 +596,7 @@ class LogSource:
 
         log_source_dirs = sorted(d for d in config_dir.iterdir() if d.is_dir())
         if not log_source_dirs:
-            raise LogAlertRuntimeError(
+            raise LogAlertConfigError(
                 f"'{config_dir}': Configuration directory contains no subdirectories; see '--config-dir' or 'config_dir' directive"
             )
 
@@ -612,7 +610,7 @@ class LogSource:
                 log_sources.append(log_source)
 
         if not log_sources:
-            raise LogAlertRuntimeError(f"'{config_dir}': No log sources found")
+            raise LogAlertConfigError(f"'{config_dir}': No log sources found")
 
         return LogSource._apply_include_exclude_filters(log_sources, cli_config, default_config)
 
@@ -677,15 +675,15 @@ class LogSource:
             tuple[LogSource]
 
         Raises:
-            LogAlertRuntimeError: Invalid configuration.
+            LogAlertConfigError: Invalid configuration.
         """
         include_sources, exclude_sources = LogSource._include_exclude_list(cli_config.get("sources") or default_config.get("sources"))
         include_services, exclude_services = LogSource._include_exclude_list(cli_config.get("services") or default_config.get("services"))
 
         if include_sources and exclude_sources:
-            raise LogAlertRuntimeError("You cannot include some sources and exclude others at the same time")
+            raise LogAlertConfigError("You cannot include some sources and exclude others at the same time")
         if include_services and exclude_services:
-            raise LogAlertRuntimeError("You cannot include some services and exclude others at the same time")
+            raise LogAlertConfigError("You cannot include some services and exclude others at the same time")
 
         # Include and exclude sources
         if exclude_sources:
@@ -700,9 +698,9 @@ class LogSource:
 
         if len(sources) > 1:
             if include_services:
-                raise LogAlertRuntimeError(f"Must use '--source' to define the SOURCE for included services: {', '.join(include_services)}")
+                raise LogAlertConfigError(f"Must use '--source' to define the SOURCE for included services: {', '.join(include_services)}")
             if exclude_services:
-                raise LogAlertRuntimeError(f"Must use '--source' to define the SOURCE for excluded services: {', '.join(exclude_services)}")
+                raise LogAlertConfigError(f"Must use '--source' to define the SOURCE for excluded services: {', '.join(exclude_services)}")
 
         if include_services or exclude_services:
             # Include and exclude services
@@ -726,14 +724,14 @@ class LogSource:
 
         sources = LogSource._filter_disabled_sources(sources)
         if not sources:
-            raise LogAlertRuntimeError("No log sources enabled")
+            raise LogAlertConfigError("No log sources enabled")
 
         if include_sources and INCLUDE_FILTER_ALL not in include_sources:
             # Ensure we find everything we are looking for
             for source_name in include_sources:
                 found_sources = tuple(s for s in sources if s.name == source_name)
                 if not found_sources:
-                    raise LogAlertRuntimeError(f"{source_name}: No such source")
+                    raise LogAlertConfigError(f"{source_name}: No such source")
 
         if include_services and INCLUDE_FILTER_ALL not in include_services:
             # Ensure we find everything we are looking for
@@ -742,6 +740,6 @@ class LogSource:
             for service_name in include_services:
                 found_services = tuple(s for s in source.log_services if s.name == service_name)
                 if not found_services:
-                    raise LogAlertRuntimeError(f"{service_name}: Log source '{source.name}' has no such service")
+                    raise LogAlertConfigError(f"{service_name}: Log source '{source.name}' has no such service")
 
         return tuple(sources)

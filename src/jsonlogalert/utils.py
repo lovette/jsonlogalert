@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 import yaml
 
-from jsonlogalert.exceptions import LogAlertRuntimeError
+from jsonlogalert.exceptions import LogAlertConfigError
 
 ######################################################################
 # Helper functions
@@ -21,7 +21,7 @@ def read_config_file(config_path: Path) -> dict | None:
         config_path (Path): Config file path.
 
     Raises:
-        LogAlertRuntimeError: Failed to open or parse file.
+        LogAlertConfigError: Failed to open or parse file.
 
     Returns:
         dict or None if file does not exist or is empty.
@@ -34,6 +34,6 @@ def read_config_file(config_path: Path) -> dict | None:
                 config = json.load(fp) if config_path.suffix == ".json" else yaml.safe_load(fp.read())
 
     except (OSError, json.JSONDecodeError, yaml.YAMLError) as err:
-        raise LogAlertRuntimeError(f"{err}") from err
+        raise LogAlertConfigError(f"{err}") from err
 
     return config

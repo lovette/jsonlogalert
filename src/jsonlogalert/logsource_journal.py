@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 from functools import cached_property
 from uuid import UUID
 
-from jsonlogalert.exceptions import LogAlertRuntimeError
 from jsonlogalert.logsource import LogSource
 from systemd import journal  # type: ignore[reportMissingImports]
 
@@ -100,7 +99,7 @@ class LogSourceSystemdJournal(LogSource):
                 self.log_debug("Tail will start at the beginning of the journal")
                 exec_args.extend(("-A",))
             else:
-                raise LogAlertRuntimeError(f"'{self.tail_journal_since}' is not a valid '--tail-journal-since' option")
+                self.log_error(f"'{self.tail_journal_since}' is not a valid '--tail-journal-since' option")
 
         elif not self.tail_ignore:
             if tail_cursor_path.is_file():

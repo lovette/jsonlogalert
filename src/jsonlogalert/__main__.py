@@ -11,7 +11,7 @@ import click
 from click.core import ParameterSource
 from click_option_group import optgroup
 
-from jsonlogalert.exceptions import LogAlertRuntimeError
+from jsonlogalert.exceptions import LogAlertConfigError
 from jsonlogalert.logsource import LogSource
 from jsonlogalert.logsource_journal import LogSourceSystemdJournal
 from jsonlogalert.utils import read_config_file
@@ -49,8 +49,8 @@ def config_set_default(ctx: click.Context, param: click.Option, value: Path) -> 
     if value and value.is_file():
         try:
             config = read_config_file(value)
-        except LogAlertRuntimeError as err:
-            raise LogAlertRuntimeError(f"Failed to read config file {value}: {err}") from err
+        except LogAlertConfigError as err:
+            raise LogAlertConfigError(f"Failed to read config file {value}: {err}") from err
         else:
             if config:
                 ctx.default_map = config
@@ -69,12 +69,12 @@ def resolve_bin(name_or_path: Path, conf_directive: str) -> Path:
         Path: Absolute path to file if it's executable; otherwise None.
 
     Raises:
-        LogAlertRuntimeError: Command not found
+        LogAlertConfigError: Command not found
     """
     which = shutil.which(name_or_path)
 
     if not which:
-        raise LogAlertRuntimeError(f"{name_or_path}: command not found; set '{conf_directive}' if necessary.")
+        raise LogAlertConfigError(f"{name_or_path}: command not found; set '{conf_directive}' if necessary.")
 
     logging.debug(f"Resolved command '{name_or_path}' to '{which}'")
 
@@ -88,9 +88,9 @@ def _delete_tail_state_files(tail_state_dir: Path) -> None:
         tail_state_dir (Path): Directory containing tail state files.
     """
     if tail_state_dir is None:
-        raise LogAlertRuntimeError("'tail_state_dir' directive is not set.")
+        raise LogAlertConfigError("'tail_state_dir' directive is not set.")
     if not tail_state_dir.is_dir():
-        raise LogAlertRuntimeError(f"{tail_state_dir}: No such directory")
+        raise LogAlertConfigError(f"{tail_state_dir}: No such directory")
 
     # NOTE: Glob must match spec in LogSource.get_tail_state_path
     for state_file in tail_state_dir.glob("jsonlogalert-*.offset"):
@@ -503,7 +503,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     # Only one journal makes sense
     if len(journal_sources) > 1:
-        raise LogAlertRuntimeError(f"Only one journal source can be enabled ({len(journal_sources)} found)")
+        raise LogAlertConfigError(f"Only one journal source can be enabled ({len(journal_sources)} found)")
 
     logging.debug("Configuration complete, ready to read logs!")
 
@@ -528,10 +528,10 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     if tail_file_paths or log_file_streams:
         if not file_sources:
-            raise LogAlertRuntimeError("A single logfile source must be enabled to parse given files")
+            raise LogAlertConfigError("A single logfile source must be enabled to parse given files")
         if len(file_sources) > 1:
             # We need to know how to parse provided file
-            raise LogAlertRuntimeError("A single '--source' must be specified to know how to parse given files")
+            raise LogAlertConfigError("A single '--source' must be specified to know how to parse given files")
 
     if tail_file_paths:
         assert isinstance(tail_file_paths, Sequence)
@@ -555,7 +555,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
         services_count += len(log_source.log_services)
 
     if output_file_name and services_count > 1:
-        raise LogAlertRuntimeError("A single '--service' with a single log file must be specified to use '--output-file-name'")
+        raise LogAlertConfigError("A single '--service' with a single log file must be specified to use '--output-file-name'")
 
     for log_source in log_sources:
         log_source.reset()

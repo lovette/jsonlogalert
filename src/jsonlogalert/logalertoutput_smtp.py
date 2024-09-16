@@ -101,22 +101,22 @@ class LogAlertOutputToSMTP(LogAlertOutput):
         """Initialize and verify output configuration properties.
 
         Raises:
-            LogAlertRuntimeError: Invalid configuration.
+            LogAlertConfigError: Invalid configuration.
         """
         super().validate_conf()
 
         if not self.smtp_host:
-            self.raise_error("SMTP output configuration error", "'output_smtp_host' is not defined")
+            self.config_error("SMTP output configuration error", "'output_smtp_host' is not defined")
         if not self.smtp_port:
-            self.raise_error("SMTP output configuration error", "'output_smtp_port' is not defined")
+            self.config_error("SMTP output configuration error", "'output_smtp_port' is not defined")
         if self.auth_password and not self.auth_username:
-            self.raise_error("SMTP output configuration error", "'output_smtp_auth_password' is set but 'output_smtp_auth_username' is not")
+            self.config_error("SMTP output configuration error", "'output_smtp_auth_password' is set but 'output_smtp_auth_username' is not")
         if not self.rcpt_addr:
-            self.raise_error("SMTP output configuration error", "'output_smtp_rcpt' is not defined")
+            self.config_error("SMTP output configuration error", "'output_smtp_rcpt' is not defined")
         if not self.sender_addr:
-            self.raise_error("SMTP output configuration error", "'output_smtp_sender' is not defined")
+            self.config_error("SMTP output configuration error", "'output_smtp_sender' is not defined")
         if not self.subject:
-            self.raise_error("SMTP output configuration error", "'output_smtp_subject' is not defined")
+            self.config_error("SMTP output configuration error", "'output_smtp_subject' is not defined")
 
     def _send_message(self, message: str) -> None:
         """Submit MIME message to SMTP server.

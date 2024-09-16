@@ -67,15 +67,15 @@ class LogAlertOutputToFile(LogAlertOutput):
         """Initialize and verify output configuration properties.
 
         Raises:
-            LogAlertRuntimeError: Invalid configuration.
+            LogAlertConfigError: Invalid configuration.
         """
         super().validate_conf()
 
         if not self.output_dir_path:
-            self.raise_error("Cannot save output", "'output_dir_path' is not set.")
+            self.config_error("Cannot save output", "'output_dir_path' is not set.")
 
         if not self.output_dir_path.is_dir():
-            self.raise_error("Cannot save output", f"No such directory: {self.output_dir_path}")
+            self.config_error("Cannot save output", f"No such directory: {self.output_dir_path}")
 
     def _savefile(self, output_path: Path, content: str) -> None:
         """Save file to output directory.

@@ -7,8 +7,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
-from jsonlogalert.exceptions import LogAlertRuntimeError
-
 if TYPE_CHECKING:
     from collections import List
     from collections.abc import Sequence
@@ -18,6 +16,7 @@ if TYPE_CHECKING:
 
 from click import echo
 
+from jsonlogalert.exceptions import LogAlertConfigError
 from jsonlogalert.logalertoutput import LogAlertOutput, LogAlertOutputToDevNull, LogAlertOutputToStdout
 from jsonlogalert.logalertoutput_file import LogAlertOutputToFile
 from jsonlogalert.logalertoutput_smtp import LogAlertOutputToSMTP
@@ -166,7 +165,7 @@ class LogService:
         """Patterns used to rewrite field values.
 
         Raises:
-            LogAlertRuntimeError: Invalid configuration.
+            LogAlertConfigError: Invalid configuration.
 
         Returns:
             Sequence[tuple[str, re.Pattern]]: tuple(tuple(field name, regex pattern), ...)
@@ -176,7 +175,7 @@ class LogService:
             return None
 
         if not isinstance(rewrite_fields, (dict, list)):
-            self.raise_error("Invalid configuration: 'rewrite_fields' must be key/value pairs.")
+            self.config_error("Invalid configuration: 'rewrite_fields' must be key/value pairs.")
 
         rewrite_field_patterns = []
 
@@ -196,7 +195,7 @@ class LogService:
             cli_config (dict): Command line configuration options.
 
         Raises:
-            LogAlertRuntimeError: Load config failure.
+            LogAlertConfigError: Load config failure.
         """
         self.service_config = self._load_config_json(self.service_config_path)
 
@@ -265,14 +264,14 @@ class LogService:
             dict[str, Any]
 
         Raises:
-            LogAlertRuntimeError: Failed to load configuration.
+            LogAlertConfigError: Failed to load configuration.
         """
         service_config = {}
 
         try:
             service_config = read_config_file(config_path)
-        except LogAlertRuntimeError as err:
-            self.raise_error(f"Failed to open config file '{config_path.name}'", err)
+        except LogAlertConfigError as err:
+            self.config_error(f"Failed to open config file '{config_path.name}'", err)
 
         return service_config
 
@@ -354,7 +353,7 @@ class LogService:
             tuple[dict[str, FieldRule]] or None
 
         Raises:
-            LogAlertRuntimeError: Invalid rules.
+            LogAlertConfigError: Invalid rules.
         """
         rules_config = self._load_config_json(rules_config_path)
         if not rules_config:
@@ -364,7 +363,7 @@ class LogService:
             rules_config = [rules_config]
 
         if not isinstance(rules_config, list):
-            self.raise_error(f"Invalid rules configuration: {rules_config_path.name}: rules must be key/value pairs")
+            self.config_error(f"Invalid rules configuration: {rules_config_path.name}: rules must be key/value pairs")
 
         return FieldRule.build_rules(rules_config)
 
@@ -396,7 +395,7 @@ class LogService:
         """Create outputs based on service configuration.
 
         Raises:
-            LogAlertRuntimeError
+            LogAlertConfigError
 
         Returns:
             tuple[LogAlertOutput]
@@ -478,19 +477,19 @@ class LogService:
         """
         logging.error(f"{self.fullname}: {message}")
 
-    def raise_error(self, message: str, err: str | Exception | None = None) -> None:
-        """Raise a 'LogAlertRuntimeError' exception related to this service.
+    def config_error(self, message: str, err: str | Exception | None = None) -> None:
+        """Raise a 'LogAlertConfigError' exception related to this service.
 
         Args:
             message (str): Message.
             err (str | Exception | None): Error message or exception.
 
         Raises:
-            LogAlertRuntimeError
+            LogAlertConfigError
         """
         if err:
-            raise LogAlertRuntimeError(f"{self.fullname}: {message}: {err}")
-        raise LogAlertRuntimeError(f"{self.fullname}: {message}")
+            raise LogAlertConfigError(f"{self.fullname}: {message}: {err}")
+        raise LogAlertConfigError(f"{self.fullname}: {message}")
 
     @cached_property
     def is_catchall(self) -> bool:
@@ -517,7 +516,7 @@ class LogService:
             tuple[LogService]
 
         Raises:
-            LogAlertRuntimeError: Failed to load services.
+            LogAlertConfigError: Failed to load services.
         """
         assert log_source.source_dir.is_dir()
 

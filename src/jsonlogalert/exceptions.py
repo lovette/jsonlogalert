@@ -7,3 +7,7 @@ class LogAlertRuntimeError(ClickException):
 
 class LogAlertParserError(LogAlertRuntimeError):
     """Parser exception."""
+
+
+class LogAlertConfigError(LogAlertRuntimeError):
+    """Configuration exception."""
