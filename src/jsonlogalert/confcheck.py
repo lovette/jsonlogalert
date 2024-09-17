@@ -127,7 +127,7 @@ conf_del_keys(SOURCE_CONF_DEFAULTS, COMMAND_OPTS_ONLY)
 
 SOURCE_CONFFILE_DIRECTIVES = set(SOURCE_CONF_DEFAULTS.keys())
 
-FILE_SOURCE_ONLY_DIRECTIVES = set()
+FILE_SOURCE_ONLY_DIRECTIVES = {"logfiles", "onelog"}
 for opt_prefix in ("tail_file",):
     for k in SOURCE_CONFFILE_DIRECTIVES:
         if k.startswith(opt_prefix):
