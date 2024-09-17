@@ -4,7 +4,6 @@ import io
 import logging
 import shutil
 import sys
-from collections.abc import Sequence
 from pathlib import Path
 
 import click
@@ -561,15 +560,11 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
             # We need to know how to parse provided file
             raise LogAlertConfigError("A single '--source' must be specified to know how to parse given files")
 
-    if tail_file_paths:
-        assert isinstance(tail_file_paths, Sequence)
-        # Source default logs are not read if LOGFILEs are specified.
-        file_sources[0].logfiles = tail_file_paths
+        if tail_file_paths:
+            file_sources[0].setlogfiles(tail_file_paths)
 
-    if log_file_streams:
-        assert isinstance(log_file_streams, Sequence)
-        # Source default logs are not read if LOGFILEs are specified.
-        file_sources[0].logstreams = log_file_streams
+        if log_file_streams:
+            file_sources[0].setlogstreams(log_file_streams)
 
     # Deaggregate sources that need to be
     new_sources = []

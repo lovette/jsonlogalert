@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import copy
 import logging
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections import List
-    from collections.abc import Sequence
     from io import TextIOWrapper
     from pathlib import Path
 
@@ -142,3 +142,23 @@ class LogSourceTextFile(LogSource):
         self.log_debug(f"Deaggregated into {len(new_sources)} sources")
 
         return new_sources
+
+    def setlogfiles(self, logfiles: Sequence[str]) -> None:
+        """Set log files to read instead of default log files.
+
+        Args:
+            logfiles (Sequence[str]): List of log files.
+        """
+        assert isinstance(logfiles, Sequence)
+        self.logfiles = logfiles
+        self.logstreams = ()
+
+    def setlogstreams(self, streams: Sequence[TextIOWrapper]) -> None:
+        """Set log streams to read instead of default log files.
+
+        Args:
+            streams (Sequence[TextIOWrapper]): List of text streams.
+        """
+        assert isinstance(streams, Sequence)
+        self.logfiles = ()
+        self.logstreams = streams
