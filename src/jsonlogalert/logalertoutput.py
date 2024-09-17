@@ -204,8 +204,6 @@ class LogAlertOutputToStdout(LogAlertOutput):
 
         content = self.render_template()
 
-        echo(f"{self.service.service_config = }")
-        echo(f"{self.output_max_bytes = }")
         if self.output_max_bytes and self.output_max_bytes < len(content):
             # Not a fatal error
             self.log_error(f"Refusing to output: Too much content; {len(content)} bytes")
