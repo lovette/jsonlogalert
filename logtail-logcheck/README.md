@@ -1,0 +1,1 @@
+This is the Perl version of `logtail2` from the Debian [logcheck](http://logcheck.org/) package. [Source is available on GitLab.](https://salsa.debian.org/debian/logcheck) It is covered by the accompanying GNU GPL LICENSE and distribured alongside *jsonlogalert* for convenience.

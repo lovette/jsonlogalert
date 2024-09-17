@@ -1,0 +1,66 @@
+[project]
+name = "jsonlogalert"
+version = "0.1.0"
+description = "Watch systemd journal and log files and email important activity to administrators."
+readme = "README.md"
+requires-python = ">=3.9"
+
+dependencies = [
+  # Required by pip-tools
+  "pyproject_hooks",
+
+  "click",
+  "click-option-group",
+  "jinja2",
+  "minify-html",
+  "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+  "click-man",
+
+  # Visual Studio Code
+  "black",
+  "ruff",
+]
+
+[build-system]
+requires = [
+  "setuptools >=65",
+]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+jsonlogalert = "jsonlogalert.__main__:cli"
+
+# https://docs.astral.sh/ruff/configuration/
+[tool.ruff]
+line-length = 150
+
+# Always generate Python 3.9-compatible code.
+target-version = "py39"
+
+# https://docs.astral.sh/ruff/rules/
+[tool.ruff.lint]
+select = [
+  "ALL",
+]
+
+ignore = [
+  "D100",   # https://docs.astral.sh/ruff/rules/undocumented-public-module/
+  "D205",   # https://docs.astral.sh/ruff/rules/blank-line-after-summary/
+  "TRY003", # https://docs.astral.sh/ruff/rules/raise-vanilla-args/
+  "EM102",  # https://docs.astral.sh/ruff/rules/f-string-in-exception/
+  "EM101",  # https://docs.astral.sh/ruff/rules/raw-string-in-exception/
+  "S101",   # https://docs.astral.sh/ruff/rules/assert/
+  "G004",   # https://docs.astral.sh/ruff/rules/logging-f-string/
+  "FBT001", # https://docs.astral.sh/ruff/rules/boolean-type-hint-positional-argument/
+  "FBT002", # https://docs.astral.sh/ruff/rules/boolean-default-value-positional-argument/
+  "ANN002", # https://docs.astral.sh/ruff/rules/missing-type-args/
+  "ANN003", # https://docs.astral.sh/ruff/rules/missing-type-kwargs/
+  "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

@@ -1,0 +1,6 @@
+.ruff_cache
+.venv
+build
+__pycache__
+*.egg-info
+*.sublime-workspace

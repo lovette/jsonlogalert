@@ -1,0 +1,128 @@
+.TH "JSONLOGALERT" "1" "2024-09-15" "0.1.0" "jsonlogalert Manual"
+.SH NAME
+jsonlogalert \- Read JSON structured logs and filter...
+.SH SYNOPSIS
+.B jsonlogalert
+[OPTIONS] [LOGFILE]...
+.SH DESCRIPTION
+Read JSON structured logs and filter entries for unusual activity.
+.PP
+    When no LOGFILE(s) are provided, read/tail and filter logs for configured log sources.
+    Alternatively, read and/or tail and filter LOGFILE(s) for a specified SOURCE.
+    When LOGFILE is -, read standard input.
+    
+.SH OPTIONS
+.TP
+\fB\-c,\fP \-\-config\-file FILE
+Read options from configuration FILE.  [default: /etc/jsonlogalert.conf]
+.TP
+\fB\-d,\fP \-\-config\-dir DIRECTORY
+Set path to directory containing source and service definitions.  [default: /etc/jsonlogalert.d]
+.TP
+\fB\-v,\fP \-\-verbose
+Be more verbose; can specify more than once.
+.TP
+\fB\-\-version\fP
+Show the version and exit.
+.TP
+\fB\-s,\fP \-\-source SOURCE
+Read only this log SOURCE; can specify more than once.
+.TP
+\fB\-\-service\fP SERVICE
+Enable only this SERVICE for a log SOURCE; can specify more than once.
+.TP
+\fBTAIL\fP LOG OPTIONS:
+.PP
+.TP
+\fB\-J,\fP \-\-tail\-journal\-dir DIRECTORY
+Tail systemd journal DIRECTORY.
+.TP
+\fB\-\-tail\-journal\-bin\fP PATH
+Set path of executable to tail systemd journal.  [default: logtail-journal]
+.TP
+\fB\-\-tail\-journal\-since\fP [boot|all]
+Read all systemd journal entries or since last boot (ignores cursor.)
+.TP
+\fB\-f,\fP \-\-tail\-file LOGFILE
+Tail text log LOGFILE; can specify more than once.
+.TP
+\fB\-\-tail\-file\-bin\fP PATH
+Set path of executable to tail log files.  [default: logtail2]
+.TP
+\fB\-\-tail\-state\-dir\fP DIRECTORY
+Set path of DIRECTORY to save tail offset/cursor state.  [default: /var/lib/misc]
+.TP
+\fB\-\-tail\-reset\fP
+Delete offset/cursor state files and exit.
+.TP
+\fB\-\-tail\-debug\fP
+Use but do not update tail offset/cursor.
+.TP
+\fB\-\-tail\-ignore\fP
+Ignore and do not update tail offset/cursor.
+.TP
+\fBGENERAL\fP OUTPUT OPTIONS:
+.PP
+.TP
+\fB\-\-output\-stdout\fP
+Output results to stdout.
+.TP
+\fB\-\-output\-devnull\fP
+Output results to /dev/null.
+.TP
+\fB\-\-output\-template\-file\fP FILENAME
+Use FILENAME instead of default output template.
+.TP
+\fBFILE\fP OUTPUT OPTIONS:
+.PP
+.TP
+\fB\-\-output\-file\-dir\fP DIRECTORY
+Output results to file in DIRECTORY.
+.TP
+\fB\-\-output\-file\-name\fP FILENAME
+Output results to FILENAME in DIRECTORY when a single SERVICE is specified.
+.TP
+\fBSMTP\fP OUTPUT OPTIONS:
+.PP
+.TP
+\fB\-\-output\-smtp\-host\fP HOSTNAME
+Mail server hostname or address.  [default: localhost]
+.TP
+\fB\-\-output\-smtp\-port\fP INTEGER
+Mail server port.  [default: 25]
+.TP
+\fB\-\-output\-smtp\-auth\-ssl\fP
+Mail server uses SSL connection.
+.TP
+\fB\-\-output\-smtp\-auth\-tls\fP
+Mail server uses TLS.
+.TP
+\fB\-\-output\-smtp\-auth\-username\fP USERNAME
+Mail server authentication username.
+.TP
+\fB\-\-output\-smtp\-auth\-password\fP PASSWORD
+Mail server authentication password.
+.TP
+\fB\-\-output\-smtp\-rcpt\fP EMAIL
+Email recipient address. Required.
+.TP
+\fB\-\-output\-smtp\-sender\fP EMAIL
+Email sender address.  [default: recipient address]
+.TP
+\fB\-\-output\-smtp\-rcpt\-name\fP NAME
+Email recipient name.
+.TP
+\fB\-\-output\-smtp\-sender\-name\fP NAME
+Email sender name.  [default: recipient name]
+.TP
+\fB\-\-output\-smtp\-subject\fP SUBJECT
+Email subject line.
+.TP
+\fBDIAGNOSTIC\fP OPTIONS:
+.PP
+.TP
+\fB\-\-print\-rules\fP
+Print rules and exit.
+.TP
+\fB\-\-print\-conf\fP
+Print source and service configurations and exit.

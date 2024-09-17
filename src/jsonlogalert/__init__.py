@@ -1,0 +1,1 @@
+"""jsonlogalert command line tool."""

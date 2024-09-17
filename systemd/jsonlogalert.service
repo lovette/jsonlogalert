@@ -1,0 +1,6 @@
+[Unit]
+Description=jsonlogalert.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/jsonlogalert
