@@ -131,9 +131,9 @@ class LogAlertOutput:
             self.load_template()
 
         template_vars = {
-            "log_service": self.service,
-            "log_source": self.service.source,
-            "log_entries": self.service.log_entries,
+            "logservice": self.service,
+            "logsource": self.service.source,
+            "logentries": self.service.logentries,
         }
 
         self.log_debug(f"Output template is '{self.jinja_template.filename}'")

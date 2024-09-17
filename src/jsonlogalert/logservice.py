@@ -47,7 +47,7 @@ class LogService:
 
         # These need to be reset() between iterations
         self.discard_count = 0
-        self.log_entries: List[LogEntry] = None
+        self.logentries: List[LogEntry] = None
 
     def __repr__(self) -> str:
         """Return the “official” string representation of an object.
@@ -78,7 +78,7 @@ class LogService:
         Returns:
             bool
         """
-        return bool(self.log_entries)
+        return bool(self.logentries)
 
     @cached_property
     def name(self) -> str:
@@ -112,13 +112,13 @@ class LogService:
         return bool(self.service_config.get("enabled", True))
 
     @cached_property
-    def max_log_entries(self) -> int:
+    def max_logentries(self) -> int:
         """Maximum number of entries to report.
 
         Returns:
             int
         """
-        return self.service_config.get("max_log_entries", 250)
+        return self.service_config.get("max_logentries", 250)
 
     @cached_property
     def service_config_path(self) -> Path:
@@ -308,10 +308,10 @@ class LogService:
         log_entry.rawfields = service_rawfields
         log_entry.conceal_fields = self.conceal_fields
 
-        self.log_entries.append(log_entry)
+        self.logentries.append(log_entry)
 
-        if self.max_log_entries and self.max_log_entries < len(self.log_entries):
-            self.log_entries.pop(0)
+        if self.max_logentries and self.max_logentries < len(self.logentries):
+            self.logentries.pop(0)
             self.discard_count += 1
 
         return True
@@ -375,8 +375,8 @@ class LogService:
         # Empty (and release memory held by) log entries and prepare for the next source log iteration.
         # https://stackoverflow.com/questions/12417498/how-to-release-used-memory-immediately-in-python-list
         # "If sys.getrefcount gives you 2, that means you are the only one who had the reference of the object"
-        self.log_entries = None
-        self.log_entries = []
+        self.logentries = None
+        self.logentries = []
         self.source = log_source  # change so our 'name' reflects new source
 
     def validate_conf(self) -> None:
@@ -426,9 +426,9 @@ class LogService:
             output (LogAlertOutput): Output target.
         """
         if self.discard_count:
-            self.log_warning(f"Claimed {len(self.log_entries)} log entries; {self.discard_count} were discarded")
+            self.log_warning(f"Claimed {len(self.logentries)} log entries; {self.discard_count} were discarded")
         else:
-            self.log_info(f"Claimed {len(self.log_entries)} log entries")
+            self.log_info(f"Claimed {len(self.logentries)} log entries")
 
         if self.has_entries:
             # We create outputs for each output() so memory is released between services

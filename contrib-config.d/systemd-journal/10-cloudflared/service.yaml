@@ -1,7 +1,7 @@
 description: "cloudflared"
 output_template_file: "email.jinja-html"
 output_template_minify_html: True
-max_log_entries: 250
+max_logentries: 250
 
 rewrite_fields:
   # "YYYY-MM-DDTHH:MM:SSZ INF MESSAGE"

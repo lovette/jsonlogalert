@@ -65,7 +65,7 @@ conceal_fields:
   - "PRIORITY"
   - "SYSLOG_IDENTIFIER"
 
-max_log_entries: 250
+max_logentries: 250
 output_template_file: "email.jinja-html"
 output_content_type: "html"
 output_template_minify_html: True

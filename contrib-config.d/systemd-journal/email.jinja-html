@@ -59,7 +59,7 @@
     <table width="100%">
         <tbody>
 
-{%- for e in log_entries -%}
+{%- for e in logentries -%}
 
     {%- set ttimestamp = e.timestamp|format_iso(timespec="seconds") -%}
     {%- set tdate = e.timestamp|format_date -%}

@@ -92,7 +92,7 @@ SERVICE_CONF_DEFAULTS = COMMAND_OPTS_DEFAULTS | {
     "drop_rules_path": None,
     "enabled": True,
     "ignore_fields": None,
-    "max_log_entries": 250,
+    "max_logentries": 250,
     "output_content_type": None,
     "output_smtp_subject": "Unusual %SERVICEDESC% activity",
     "output_template_minify_html": False,
