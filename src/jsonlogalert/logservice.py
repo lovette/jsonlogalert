@@ -38,7 +38,7 @@ class LogService:
             log_source (LogSource): Log source service is associated with.
             service_confdir_path (Path): Path to directory containing service configuration.
         """
-        self.log_source = log_source
+        self.source = log_source
         self.service_confdir_path = service_confdir_path
         self.service_config: dict = None
         self.select_rules: tuple = None
@@ -98,9 +98,9 @@ class LogService:
             str
         """
         # We're not comparing with 'source.name' because it may have a 'replica_index' suffix
-        if self.name == self.log_source.source_dir.name:
-            return self.log_source.name
-        return f"{self.log_source.name}/{self.name}"
+        if self.name == self.source.source_dir.name:
+            return self.source.name
+        return f"{self.source.name}/{self.name}"
 
     @cached_property
     def enabled(self) -> bool:
@@ -204,11 +204,11 @@ class LogService:
         merged_fields = {}
 
         # Always conceal timestamp and message
-        merged_fields["conceal_fields"] = {self.log_source.timestamp_field, self.log_source.message_field}
+        merged_fields["conceal_fields"] = {self.source.timestamp_field, self.source.message_field}
 
         # Merge conceal fields before merging configs (which will overwrite the directive)
         for directive in ("capture_fields", "ignore_fields", "conceal_fields"):
-            for fields in (self.log_source.source_config.get(directive), self.service_config.get(directive)):
+            for fields in (self.source.source_config.get(directive), self.service_config.get(directive)):
                 if fields:
                     if directive in merged_fields:
                         merged_fields[directive] |= set(fields)
@@ -216,7 +216,7 @@ class LogService:
                         merged_fields[directive] = set(fields)
 
         # Merge configs in order of precedence
-        self.service_config = SERVICE_CONF_DEFAULTS | self.log_source.source_config | self.service_config | cli_config | merged_fields
+        self.service_config = SERVICE_CONF_DEFAULTS | self.source.source_config | self.service_config | cli_config | merged_fields
 
         # Delete settings that do not pertain to services and don't need to show up in print_conf()
         service_conf_clean(self)
@@ -377,7 +377,7 @@ class LogService:
         # "If sys.getrefcount gives you 2, that means you are the only one who had the reference of the object"
         self.log_entries = None
         self.log_entries = []
-        self.log_source = log_source  # change so our 'name' reflects new source
+        self.source = log_source  # change so our 'name' reflects new source
 
     def validate_conf(self) -> None:
         """Review service rules and see if they make sense."""
@@ -437,7 +437,7 @@ class LogService:
 
     def print_conf(self) -> None:
         """Print service configuration."""
-        echo(f"Service: {self.log_source.name}/{self.name}")
+        echo(f"Service: {self.source.name}/{self.name}")
         echo("=================")
 
         # Using !r uses repr() which quotes strings.

@@ -172,9 +172,9 @@ class LogAlertOutputToSMTP(LogAlertOutput):
 
         placeholders = {
             "%HOSTNAME%": hostname,
-            "%SOURCENAME%": self.log_service.log_source.name,
-            "%SERVICENAME%": self.log_service.name,
-            "%SERVICEDESC%": self.log_service.description,
+            "%SOURCENAME%": self.service.source.name,
+            "%SERVICENAME%": self.service.name,
+            "%SERVICEDESC%": self.service.description,
         }
 
         sender_name = _replace_multi(self.sender_name, placeholders)
@@ -186,5 +186,5 @@ class LogAlertOutputToSMTP(LogAlertOutput):
 
         email["X-JsonLogAlert-Date"] = datetime.now(tz=timezone.utc).isoformat()
         email["X-JsonLogAlert-Host"] = hostname
-        email["X-JsonLogAlert-Source"] = self.log_service.log_source.name
-        email["X-JsonLogAlert-Service"] = self.log_service.name
+        email["X-JsonLogAlert-Source"] = self.service.source.name
+        email["X-JsonLogAlert-Service"] = self.service.name

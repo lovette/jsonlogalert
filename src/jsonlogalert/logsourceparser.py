@@ -18,7 +18,7 @@ class LogSourceParser:
         Args:
             log_source (LogSource): Log source for this parser.
         """
-        self.log_source = log_source
+        self.source = log_source
 
         # Converters will be applied to captured fields
         self.field_converters = None

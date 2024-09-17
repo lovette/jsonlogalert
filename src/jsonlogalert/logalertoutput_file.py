@@ -41,7 +41,7 @@ class LogAlertOutputToFile(LogAlertOutput):
                 # We are saving files to a directory, so make up a unique file name
                 name_parts = (
                     "jsonlogalert",
-                    self.log_service.fullname.replace("/", "-").replace("[", "_").replace("]", ""),
+                    self.service.fullname.replace("/", "-").replace("[", "_").replace("]", ""),
                     datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S"),
                 )
 

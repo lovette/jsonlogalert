@@ -27,15 +27,15 @@ class LogAlertOutput:
         Args:
             log_service (LogService): Service using this output.
         """
-        self.log_service = log_service
+        self.service = log_service
 
         self.output_max_bytes_default = 100 * 1024  # 100 KiB (arbitrary; overridden by subclasses)
 
         # Search these directories for template files
         template_dirs = (
-            self.log_service.service_confdir_path,
-            self.log_service.log_source.source_dir,
-            self.log_service.log_source.source_dir.parent,
+            self.service.service_confdir_path,
+            self.service.source.source_dir,
+            self.service.source.source_dir.parent,
         )
 
         self.jinja_env = LogAlertJinjaEnvironment(template_dirs, self.output_template_minify_html)
@@ -51,7 +51,7 @@ class LogAlertOutput:
             Optional[Any]: Field value
         """
         if key.startswith("output_"):
-            return self.log_service.service_config.get(key)
+            return self.service.service_config.get(key)
 
         # For some reason I can't do this in this class (which I do in LogSource :/):
         # > return super().__getattr__(key)
@@ -75,7 +75,7 @@ class LogAlertOutput:
         Returns:
             bool
         """
-        return bool(self.log_service.service_config.get("output_template_minify_html", self.output_content_type == "html"))
+        return bool(self.service.service_config.get("output_template_minify_html", self.output_content_type == "html"))
 
     @cached_property
     def output_max_bytes(self) -> int:
@@ -84,7 +84,7 @@ class LogAlertOutput:
         Returns:
             int
         """
-        return self.log_service.service_config.get("output_max_bytes", self.output_max_bytes_default)
+        return self.service.service_config.get("output_max_bytes", self.output_max_bytes_default)
 
     @cached_property
     def output_content_type(self) -> str:
@@ -93,7 +93,7 @@ class LogAlertOutput:
         Returns:
             str
         """
-        output_content_type = self.log_service.service_config.get("output_content_type")
+        output_content_type = self.service.service_config.get("output_content_type")
 
         if not output_content_type:
             suffix = Path(self.output_template_file).suffix
@@ -131,9 +131,9 @@ class LogAlertOutput:
             self.load_template()
 
         template_vars = {
-            "log_service": self.log_service,
-            "log_source": self.log_service.log_source,
-            "log_entries": self.log_service.log_entries,
+            "log_service": self.service,
+            "log_source": self.service.source,
+            "log_entries": self.service.log_entries,
         }
 
         self.log_debug(f"Output template is '{self.jinja_template.filename}'")
@@ -146,7 +146,7 @@ class LogAlertOutput:
         Args:
             message (str): Message.
         """
-        logging.debug(f"{self.log_service.fullname}: {message}")
+        logging.debug(f"{self.service.fullname}: {message}")
 
     def log_info(self, message: str) -> None:
         """Log a info message related to this output.
@@ -154,7 +154,7 @@ class LogAlertOutput:
         Args:
             message (str): Message.
         """
-        logging.info(f"{self.log_service.fullname}: {message}")
+        logging.info(f"{self.service.fullname}: {message}")
 
     def log_warning(self, message: str) -> None:
         """Log a warning message related to this output.
@@ -162,7 +162,7 @@ class LogAlertOutput:
         Args:
             message (str): Message.
         """
-        logging.warning(f"{self.log_service.fullname}: {message}")
+        logging.warning(f"{self.service.fullname}: {message}")
 
     def log_error(self, message: str) -> None:
         """Log a error message related to this output.
@@ -170,7 +170,7 @@ class LogAlertOutput:
         Args:
             message (str): Message.
         """
-        logging.error(f"{self.log_service.fullname}: {message}")
+        logging.error(f"{self.service.fullname}: {message}")
 
     def config_error(self, message: str, err: str | Exception | None = None) -> None:
         """Raise a 'LogAlertConfigError' exception related to this output.
@@ -183,8 +183,8 @@ class LogAlertOutput:
             LogAlertConfigError
         """
         if err:
-            raise LogAlertConfigError(f"{self.log_service.fullname}: {message}: {err}")
-        raise LogAlertConfigError(f"{self.log_service.fullname}: {message}")
+            raise LogAlertConfigError(f"{self.service.fullname}: {message}: {err}")
+        raise LogAlertConfigError(f"{self.service.fullname}: {message}")
 
 
 ######################################################################
@@ -200,11 +200,11 @@ class LogAlertOutputToStdout(LogAlertOutput):
         Args:
             content (str): Output content.
         """
-        assert self.log_service is not None
+        assert self.service is not None
 
         content = self.render_template()
 
-        echo(f"{self.log_service.service_config = }")
+        echo(f"{self.service.service_config = }")
         echo(f"{self.output_max_bytes = }")
         if self.output_max_bytes and self.output_max_bytes < len(content):
             # Not a fatal error

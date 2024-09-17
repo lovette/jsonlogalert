@@ -54,7 +54,7 @@ class LogSource:
         self.message_field_default = MESSAGE_FIELD_DEFAULT
 
         # These need to be reset() between iterations
-        self.log_services: tuple[LogService] = None
+        self.services: tuple[LogService] = None
 
         # Will be an integer index if source is copied by deaggregate()
         self.replica_index = None
@@ -66,7 +66,7 @@ class LogSource:
             str
         """
         class_name = type(self).__name__
-        return f"{class_name}({self.source_dir}, {len(self.log_services)} services)"
+        return f"{class_name}({self.source_dir}, {len(self.services)} services)"
 
     def __getattr__(self, key: str) -> str | None:
         """Return source config field value using attribute notation.
@@ -185,9 +185,9 @@ class LogSource:
         else:
             self.source_parser = LogSourceParser(self)
 
-        self.log_services = LogService.load_services(self, cli_config)
+        self.services = LogService.load_services(self, cli_config)
 
-        if not self.log_services:
+        if not self.services:
             # Consider ourself disabled if we have no services (perhaps all are disabled).
             self.enabled = False
 
@@ -315,7 +315,7 @@ class LogSource:
                 fields = self.parse_line(log_line)
                 self._apply_field_converters(fields, log_line)
                 log_entry = LogEntry(fields, self.timestamp_field, self.message_field)
-                claimed = any(service.claim_entry(log_entry) for service in self.log_services)
+                claimed = any(service.claim_entry(log_entry) for service in self.services)
             except LogAlertParserError as err:
                 if fail_line_count <= MAX_PARSE_STREAM_FAIL_MSGS:
                     self.log_warning(f"Failed to parse log entry (line {line_count}): {err}")
@@ -398,7 +398,7 @@ class LogSource:
 
     def output(self) -> None:
         """Output results for log source services."""
-        for log_service in self.log_services:
+        for log_service in self.services:
             log_service.output()
 
     def validate_conf(self) -> None:
@@ -414,31 +414,31 @@ class LogSource:
         if not self.tail_state_dir.is_dir():
             self.config_error(f"{self.tail_state_dir}: No such directory")
 
-        catchalls = [service.name for service in self.log_services if service.is_catchall]
+        catchalls = [service.name for service in self.services if service.is_catchall]
         if len(catchalls) > 1:
             self.config_error(f"{len(catchalls)} services are configured to claim all log entries: [{', '.join(catchalls)}]")
 
     def force_enable(self) -> None:
         """Enable source and all it's services."""
-        for log_service in self.log_services:
+        for log_service in self.services:
             log_service.enabled = True
 
-        self.enabled = len(self.log_services) > 0
+        self.enabled = len(self.services) > 0
 
     def filter_disabled_services(self) -> None:
         """Filter out disabled services."""
-        if self.log_services:
-            disabled_services = [s for s in self.log_services if not s.enabled]
-            self.log_services = [s for s in self.log_services if s.enabled]
+        if self.services:
+            disabled_services = [s for s in self.services if not s.enabled]
+            self.services = [s for s in self.services if s.enabled]
 
-            if self.log_services:
-                self.log_debug(f"{len(self.log_services)} enabled services: [{', '.join([d.name for d in self.log_services])}]")
+            if self.services:
+                self.log_debug(f"{len(self.services)} enabled services: [{', '.join([d.name for d in self.services])}]")
                 if disabled_services:
                     self.log_debug(f"{len(disabled_services)} disabled services: [{', '.join([d.name for d in disabled_services])}]")
             else:
                 self.log_info("No enabled services; source will be disabled")
 
-        self.enabled = len(self.log_services) > 0
+        self.enabled = len(self.services) > 0
 
     def deaggregate(self) -> List[LogSource]:
         """Return a new list of sources after deaggreating logs.
@@ -450,7 +450,7 @@ class LogSource:
 
     def reset(self) -> None:
         """Reset source internals to prepare for another source log iteration."""
-        for service in self.log_services:
+        for service in self.services:
             service.reset(self)
 
     def print_conf(self) -> None:
@@ -464,7 +464,7 @@ class LogSource:
                 v = str(v)  # noqa: PLW2901
             echo(f"{k}: {v!r}")
 
-        for log_service in self.log_services:
+        for log_service in self.services:
             echo("")
             log_service.print_conf()
 
@@ -688,11 +688,11 @@ class LogSource:
             assert len(sources) == 1
             source = sources[0]
             if exclude_services:
-                source.log_services = [s for s in source.log_services if s.name not in exclude_services]
+                source.services = [s for s in source.services if s.name not in exclude_services]
             if include_services and INCLUDE_FILTER_ALL not in include_services:
-                source.log_services = [s for s in source.log_services if s.name in include_services]
+                source.services = [s for s in source.services if s.name in include_services]
 
-            logging.debug(f"Only loading services: {', '.join([d.name for d in source.log_services])}")
+            logging.debug(f"Only loading services: {', '.join([d.name for d in source.services])}")
 
         if include_sources or exclude_sources or include_services or exclude_services:
             # Since sources and services are explicitly referenced we enable everything
@@ -719,7 +719,7 @@ class LogSource:
             assert len(sources) == 1
             source = sources[0]
             for service_name in include_services:
-                found_services = tuple(s for s in source.log_services if s.name == service_name)
+                found_services = tuple(s for s in source.services if s.name == service_name)
                 if not found_services:
                     raise LogAlertConfigError(f"{service_name}: Log source '{source.name}' has no such service")
 

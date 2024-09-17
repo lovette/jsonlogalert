@@ -507,7 +507,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     if print_rules:
         i = 0
         for log_source in log_sources:
-            for log_service in log_source.log_services:
+            for log_service in log_source.services:
                 if i:
                     click.echo("")
                 log_service.print_rules()
@@ -549,7 +549,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     # Count services *after* deaggregation
     services_count = 0
     for log_source in log_sources:
-        services_count += len(log_source.log_services)
+        services_count += len(log_source.services)
 
     if output_file_name and services_count > 1:
         raise LogAlertConfigError("A single '--service' with a single log file must be specified to use '--output-file-name'")
