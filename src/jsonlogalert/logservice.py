@@ -407,11 +407,13 @@ class LogService:
         if ns.output_devnull:
             outputs.append(LogAlertOutputToDevNull(self))
         else:
-            if ns.output_file_dir:
+            if ns.output_file_dir or ns.output_file_name:
                 outputs.append(LogAlertOutputToFile(self))
+
+            # SMTP will output message to stdout itself, so it's mutex with 'output_stdout'
             if ns.output_smtp_rcpt:
                 outputs.append(LogAlertOutputToSMTP(self))
-            if ns.output_stdout:
+            elif ns.output_stdout:
                 outputs.append(LogAlertOutputToStdout(self))
 
         if not outputs:

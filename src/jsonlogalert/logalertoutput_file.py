@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from jsonlogalert.logalertoutput import LogAlertOutput
+from jsonlogalert.utils import resolve_rel_path
 
 if TYPE_CHECKING:
     from jsonlogalert.logservice import LogService
@@ -29,39 +30,39 @@ class LogAlertOutputToFile(LogAlertOutput):
 
     def __call__(self) -> None:
         """Save output to file."""
+        output_file_name = self.output_file_name
+
+        if not output_file_name:
+            # We are saving files to a directory, so make up a unique file name
+            name_parts = (
+                "jsonlogalert",
+                self.service.fullname.replace("/", "-").replace("[", "_").replace("]", ""),
+                datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S"),
+            )
+
+            output_file_name = "-".join(name_parts)
+
+            for s, r in (("/", "-"), ("[", "_"), ("]", "")):
+                output_file_name = output_file_name.replace(s, r)
+
+        output_path = resolve_rel_path(output_file_name, self.output_file_dir).with_suffix(f".{self.output_content_type}")
+
         content = self.render_template()
 
         if self.output_max_bytes and self.output_max_bytes < len(content):
             # Not a fatal error
             self.log_error(f"Refusing to save output: Too much content; {len(content)} bytes")
         else:
-            output_file_name = self.output_file_name
-
-            if output_file_name is None:
-                # We are saving files to a directory, so make up a unique file name
-                name_parts = (
-                    "jsonlogalert",
-                    self.service.fullname.replace("/", "-").replace("[", "_").replace("]", ""),
-                    datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S"),
-                )
-
-                output_file_name = "-".join(name_parts)
-
-                for s, r in (("/", "-"), ("[", "_"), ("]", "")):
-                    output_file_name = output_file_name.replace(s, r)
-
-            output_path = (self.output_dir_path / output_file_name).with_suffix(f".{self.output_content_type}")
-
             self._savefile(output_path, content)
 
     @cached_property
-    def output_dir_path(self) -> Path:
+    def output_file_dir(self) -> Path:
         """Path of output file directory.
 
         Returns:
             Path
         """
-        return Path(self.output_file_dir).resolve() if self.output_file_dir else None
+        return Path(self.service.output_file_dir) if self.service.output_file_dir else Path.cwd()
 
     def validate_conf(self) -> None:
         """Initialize and verify output configuration properties.
@@ -71,11 +72,11 @@ class LogAlertOutputToFile(LogAlertOutput):
         """
         super().validate_conf()
 
-        if not self.output_dir_path:
-            self.config_error("Cannot save output", "'output_dir_path' is not set.")
+        if not self.output_file_dir:
+            self.config_error("Cannot save output", "'output_file_dir' is not set.")
 
-        if not self.output_dir_path.is_dir():
-            self.config_error("Cannot save output", f"No such directory: {self.output_dir_path}")
+        if not self.output_file_dir.is_dir():
+            self.config_error("Cannot save output", f"{self.output_file_dir}: No such directory")
 
     def _savefile(self, output_path: Path, content: str) -> None:
         """Save file to output directory.
