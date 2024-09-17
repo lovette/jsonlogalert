@@ -62,8 +62,8 @@ class LogSourceSystemdJournal(LogSource):
         """
         journal_dir = self.source_config.get("journal_dir")
 
-        if journal_dir and journal_dir.startswith("system"):
-            # Use None instead of "system" internally
+        if journal_dir and journal_dir.startswith("default"):
+            # Use None instead of "default" internally
             journal_dir = None
 
         return journal_dir

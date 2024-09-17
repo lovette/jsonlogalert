@@ -1,5 +1,5 @@
 description: "systemd-journal"
-journal_dir: "system"
+journal_dir: "default"
 
 ignore_fields:
   - "__CURSOR"
