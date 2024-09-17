@@ -99,6 +99,49 @@ def _delete_tail_state_files(tail_state_dir: Path) -> None:
         state_file.unlink()
 
 
+def _override_output_opts(cli_config: dict) -> None:
+    """Override outputs selected based on command line arguments.
+
+    Args:
+        cli_config (dict): Command line options.
+    """
+    # Outputs in order of precedence
+    disable_outputs = {
+        "output_devnull": False,
+        "output_stdout": False,
+        "output_file_name": None,
+        "output_file_dir": None,
+        "output_smtp_rcpt": None,
+    }
+
+    # Is an output specified on the command line?
+    cli_output = None
+    for cli_arg in disable_outputs:
+        if not cli_output and cli_config.get(cli_arg, False):
+            cli_output = cli_arg
+
+    if cli_output:
+        del disable_outputs[cli_output]
+
+        if cli_output == "output_devnull":
+            logging.info("Directing all output to /dev/null")
+        elif cli_output == "output_stdout" and cli_config.get("output_smtp_rcpt"):
+            # Both --output-stdout and --output-smtp-rcpt
+            logging.info("SMTP messages will be sent to stdout; no mail will be sent")
+            del disable_outputs["output_smtp_rcpt"]
+        elif cli_output == "output_stdout":
+            logging.info("Directing all output to stdout")
+
+        # These two work together.
+        # Whichever is not set on command line may be set in the config file.
+        elif cli_output == "output_file_dir":
+            del disable_outputs["output_file_name"]
+        elif cli_output == "output_file_name":
+            del disable_outputs["output_file_dir"]
+
+        cli_config.update(disable_outputs)
+
+
 ######################################################################
 # Command
 
@@ -411,7 +454,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     ctx: click.Context,
     config_dir: Path,
     log_file_streams: tuple[io.TextIOWrapper],
-    output_devnull: bool,
+    output_devnull: bool,  ## noqa: ARG001
     output_file_dir: Path,  ## noqa: ARG001
     output_file_name: str,
     output_smtp_auth_password: str,  ## noqa: ARG001
@@ -425,7 +468,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     output_smtp_sender_name: str,  ## noqa: ARG001
     output_smtp_sender: str,  ## noqa: ARG001
     output_smtp_subject: str,  ## noqa: ARG001
-    output_stdout: bool,
+    output_stdout: bool,  ## noqa: ARG001
     output_template_file: str,  ## noqa: ARG001
     print_rules: bool,
     print_conf: bool,
@@ -473,19 +516,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     main_conf_check(cli_config, default_config)
 
     # Command line overrides source/service output configurations
-    if output_devnull:
-        logging.info("Directing all output to /dev/null")
-        cli_config["output_stdout"] = False
-        cli_config["output_file_dir"] = None
-        cli_config["output_smtp_rcpt"] = None
-    elif output_stdout:
-        logging.info("Directing all output to stdout")
-        cli_config["output_file_dir"] = None
-
-        if "output_smtp_rcpt" not in cli_config:
-            cli_config["output_smtp_rcpt"] = None  # Debug SMTP only if explicitly enabled
-        else:
-            logging.info("SMTP output will be sent to stdout")
+    _override_output_opts(cli_config)
 
     # Resolve full path to executables
     for binopt in ("tail_file_bin", "tail_journal_bin"):
