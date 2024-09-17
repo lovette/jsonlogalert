@@ -208,7 +208,7 @@ def _override_output_opts(cli_config: dict) -> None:
 )
 @optgroup.group("TAIL LOG OPTIONS")
 @optgroup.option(
-    "--tail-journal-dir",
+    "--journal-dir",
     "-J",
     type=click.Path(
         exists=True,
@@ -478,7 +478,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     tail_file_paths: tuple[Path],
     tail_ignore: bool,  ## noqa: ARG001
     tail_journal_bin: Path,  ## noqa: ARG001
-    tail_journal_dir: Path,  ## noqa: ARG001
+    journal_dir: Path,  ## noqa: ARG001
     tail_journal_since: str,  ## noqa: ARG001
     tail_reset: bool,
     tail_state_dir: Path,

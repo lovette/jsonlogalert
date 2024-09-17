@@ -43,6 +43,7 @@ MAIN_OPTS_DIRECTIVES = {
 # Some may apply to sources and services.
 
 COMMAND_OPTS_DEFAULTS = {
+    "journal_dir": None,
     "output_devnull": False,
     "output_file_dir": None,
     "output_file_name": None,
@@ -66,7 +67,6 @@ COMMAND_OPTS_DEFAULTS = {
     "tail_file_paths": (),
     "tail_ignore": False,
     "tail_journal_bin": "logtail-journal",
-    "tail_journal_dir": None,
     "tail_journal_since": None,
     "tail_reset": False,
     "tail_state_dir": "/var/lib/misc",
@@ -76,7 +76,7 @@ COMMAND_OPTS_DIRECTIVES = set(COMMAND_OPTS_DEFAULTS.keys())
 COMMAND_OPTS_ONLY = ("sources", "services")
 
 COMMAND_OPTS_SOURCE_ONLY = set()
-for opt_prefix in ("tail",):
+for opt_prefix in ("journal", "tail"):
     for k in COMMAND_OPTS_DIRECTIVES:
         if k.startswith(opt_prefix):
             COMMAND_OPTS_SOURCE_ONLY.add(k)
@@ -115,7 +115,6 @@ SOURCE_CONF_DEFAULTS = (
     | SERVICE_CONF_DEFAULTS
     | {
         "blob_fields": None,
-        "journal_dir": None,
         "logfiles": (),
         "message_field": None,
         "onelog": False,
@@ -135,7 +134,7 @@ for opt_prefix in ("tail_file",):
             FILE_SOURCE_ONLY_DIRECTIVES.add(k)
 
 JOURNAL_SOURCE_ONLY_DIRECTIVES = set()
-for opt_prefix in ("tail_journal",):
+for opt_prefix in ("journal", "tail_journal"):
     for k in SOURCE_CONFFILE_DIRECTIVES:
         if k.startswith(opt_prefix):
             JOURNAL_SOURCE_ONLY_DIRECTIVES.add(k)

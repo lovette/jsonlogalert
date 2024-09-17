@@ -23,7 +23,7 @@
 # TAIL LOG OPTIONS
 
 # Tail systemd journal DIRECTORY.
-#tail_journal_dir: DIRECTORY
+#journal_dir: DIRECTORY
 
 # Set path of executable to tail systemd journal.
 # default: logtail-journal
