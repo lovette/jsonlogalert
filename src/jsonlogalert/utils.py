@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 import yaml
@@ -27,6 +28,7 @@ def read_config_file(config_path: Path) -> dict | None:
 
     try:
         if config_path.is_file() and config_path.stat().st_size:
+            logging.debug(f"Reading {config_path}")
             with config_path.open() as fp:
                 config = json.load(fp) if config_path.suffix == ".json" else yaml.safe_load(fp.read())
 

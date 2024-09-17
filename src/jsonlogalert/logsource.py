@@ -573,27 +573,49 @@ class LogSource:
         """
         assert config_dir.is_dir()
 
-        log_sources: list[LogSource] = []
+        sources: list[LogSource] = []
 
-        log_source_dirs = sorted(d for d in config_dir.iterdir() if d.is_dir())
-        if not log_source_dirs:
+        include_sources, exclude_sources = LogSource._include_exclude_list(cli_config.get("sources") or default_config.get("sources"))
+        include_services, exclude_services = LogSource._include_exclude_list(cli_config.get("services") or default_config.get("services"))
+
+        source_dirs = sorted(d for d in config_dir.iterdir() if d.is_dir())
+        if not source_dirs:
             raise LogAlertConfigError(
                 f"'{config_dir}': Configuration directory contains no subdirectories; see '--config-dir' or 'config_dir' directive"
             )
 
-        logging.debug(f"Configuration directory '{config_dir}' has {len(log_source_dirs)} sources")
+        logging.debug(f"Configuration directory '{config_dir}' has {len(source_dirs)} sources")
 
-        for source_dir in log_source_dirs:
+        source_dirs = LogSource._filter_source_dirs(source_dirs, include_sources, exclude_sources)
+        if not source_dirs:
+            raise LogAlertConfigError("No log sources selected.")
+
+        for source_dir in source_dirs:
             log_source = LogSource._create_source(source_dir)
 
             if log_source:
                 log_source.load_conf(cli_config, default_config)
-                log_sources.append(log_source)
+                sources.append(log_source)
 
-        if not log_sources:
-            raise LogAlertConfigError(f"'{config_dir}': No log sources found")
+        if not sources:
+            raise LogAlertConfigError("No log sources found.")
 
-        return LogSource._apply_include_exclude_filters(log_sources, cli_config, default_config)
+        LogSource._apply_filter_services(sources, include_services, exclude_services)
+
+        if include_sources or exclude_sources or include_services or exclude_services:
+            # Since sources and services are explicitly referenced we enable everything
+            for source in sources:
+                source.force_enable()
+
+        for source in sources:
+            # Remove any disabled services; may disable the source too.
+            source.filter_disabled_services()
+
+        sources = LogSource._get_enabled_sources(sources)
+        if not sources:
+            raise LogAlertConfigError("No log sources enabled")
+
+        return tuple(sources)
 
     @staticmethod
     def _include_exclude_list(names: Sequence[str]) -> tuple[list, list]:
@@ -617,14 +639,14 @@ class LogSource:
         return include_names, exclude_names
 
     @staticmethod
-    def _filter_disabled_sources(sources: Sequence[LogSource]) -> Sequence[LogSource]:
+    def _get_enabled_sources(sources: Sequence[LogSource]) -> tuple[LogSource]:
         """Return list of enabled sources.
 
         Args:
             sources (Sequence[LogSource]): List of sources.
 
         Returns:
-            Sequence[LogSource]: List of sources.
+            tuple[LogSource]: List of sources.
         """
         if sources:
             disabled_sources = [s for s in sources if not s.enabled]
@@ -637,45 +659,56 @@ class LogSource:
             else:
                 logging.info("All sources are disabled")
 
-        return sources
+        return tuple(sources)
 
     @staticmethod
-    def _apply_include_exclude_filters(  # noqa: C901, PLR0912
-        sources: Sequence[LogSource],
-        cli_config: dict[str, Any],
-        default_config: dict[str, Any],
-    ) -> tuple[LogSource]:
-        """Filter sources and services based on configurations.
+    def _filter_source_dirs(source_dirs: Sequence[Path], include_sources: Sequence[str], exclude_sources: Sequence[str]) -> tuple[LogSource]:
+        """Filter source directories based on configurations.
 
         Args:
-            sources (Sequence[LogSource]): List of sources.
-            cli_config (dict): Command line configuration options.
-            default_config (dict): Default configuration options.
-
-        Returns:
-            tuple[LogSource]
+            source_dirs (Sequence[Path]): List of source directories.
+            include_sources (Sequence[str]): List of sources to include.
+            exclude_sources (Sequence[str]): List of sources to exclude.
 
         Raises:
             LogAlertConfigError: Invalid configuration.
         """
-        include_sources, exclude_sources = LogSource._include_exclude_list(cli_config.get("sources") or default_config.get("sources"))
-        include_services, exclude_services = LogSource._include_exclude_list(cli_config.get("services") or default_config.get("services"))
-
         if include_sources and exclude_sources:
             raise LogAlertConfigError("You cannot include some sources and exclude others at the same time")
-        if include_services and exclude_services:
-            raise LogAlertConfigError("You cannot include some services and exclude others at the same time")
 
-        # Include and exclude sources
         if exclude_sources:
-            sources = [s for s in sources if s.name not in exclude_sources]
+            source_dirs = [d for d in source_dirs if d.name not in exclude_sources]
         if include_sources and INCLUDE_FILTER_ALL not in include_sources:
-            sources = [s for s in sources if s.name in include_sources]
+            source_dirs = [d for d in source_dirs if d.name in include_sources]
 
         if include_sources or exclude_sources:
-            logging.debug(f"Only loading sources: {', '.join([d.name for d in sources])}")
+            logging.debug(f"Only loading sources: [{', '.join([d.name for d in source_dirs])}]")
         else:
-            logging.debug(f"Loading sources: {', '.join([d.name for d in sources])}")
+            logging.debug(f"Loading sources: [{', '.join([d.name for d in source_dirs])}]")
+
+        if include_sources and INCLUDE_FILTER_ALL not in include_sources:
+            # Ensure we find everything we are looking for
+            for source_name in include_sources:
+                found_sources = tuple(s for s in source_dirs if s.name == source_name)
+                if not found_sources:
+                    raise LogAlertConfigError(f"{source_name}: No such source")
+
+        return tuple(source_dirs)
+
+    @staticmethod
+    def _apply_filter_services(sources: Sequence[LogSource], include_services: Sequence[str], exclude_services: Sequence[str]) -> None:  # noqa: C901
+        """Filter services based on configurations.
+
+        Args:
+            sources (Sequence[LogSource]): List of sources.
+            include_services (Sequence[str]): List of services to include.
+            exclude_services (Sequence[str]): List of services to exclude.
+
+        Raises:
+            LogAlertConfigError: Invalid configuration.
+        """
+        if include_services and exclude_services:
+            raise LogAlertConfigError("You cannot include some services and exclude others at the same time")
 
         if len(sources) > 1:
             if include_services:
@@ -694,26 +727,6 @@ class LogSource:
 
             logging.debug(f"Only loading services: {', '.join([d.name for d in source.services])}")
 
-        if include_sources or exclude_sources or include_services or exclude_services:
-            # Since sources and services are explicitly referenced we enable everything
-            for source in sources:
-                source.force_enable()
-
-        for source in sources:
-            # Remove whatever services are disabled
-            source.filter_disabled_services()
-
-        sources = LogSource._filter_disabled_sources(sources)
-        if not sources:
-            raise LogAlertConfigError("No log sources enabled")
-
-        if include_sources and INCLUDE_FILTER_ALL not in include_sources:
-            # Ensure we find everything we are looking for
-            for source_name in include_sources:
-                found_sources = tuple(s for s in sources if s.name == source_name)
-                if not found_sources:
-                    raise LogAlertConfigError(f"{source_name}: No such source")
-
         if include_services and INCLUDE_FILTER_ALL not in include_services:
             # Ensure we find everything we are looking for
             assert len(sources) == 1
@@ -721,6 +734,4 @@ class LogSource:
             for service_name in include_services:
                 found_services = tuple(s for s in source.services if s.name == service_name)
                 if not found_services:
-                    raise LogAlertConfigError(f"{service_name}: Log source '{source.name}' has no such service")
-
-        return tuple(sources)
+                    raise LogAlertConfigError(f"{source.name}/{service_name}: No such service")
