@@ -36,6 +36,13 @@ The general process:
 
 Services can rewrite fields to create new fields and conceal fields from templates.
 
+
+## Requirements
+
+- Python 3
+- Perl - The Perl script `logtail2` from the Logcheck distribution is included and used by default. You can use [alternatives](https://github.com/search?q=logtail2&type=repositories) written in other languages.
+
+
 ## Installation
 
 ### Bash script
