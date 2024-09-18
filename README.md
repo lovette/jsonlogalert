@@ -7,8 +7,8 @@ This tool is a modern take on the log monitoring tradition most widely implement
 ## What does it do?
 
 This tool scans server logs and emails interesting activity to a server administrator.
-It takes advantage of structured logging to give you flexibility in how logs are filtered and alerts are formatted.
-Logs can be sourced from the [systemd journal service](https://www.freedesktop.org/software/systemd/man/latest/systemd-journald.service.html), structured text files (JSON) and plain text files (with adapters that convert them into JSON.)
+It takes advantage of structured logging to give you flexibility in how logs are filtered and uses templates to customize how alerts are formatted.
+Logs can be sourced from the [systemd journal service](https://www.freedesktop.org/software/systemd/man/latest/systemd-journald.service.html), structured text files (JSON) and plain text files (using custom parsers that convert them into JSON.)
 
 This tool is best suited for those managing a small number of servers with a moderate level of activity.
 For everyone else, conventional wisdom says you should ship your logs off to a log analysis service using
@@ -24,15 +24,15 @@ and [jouno](https://github.com/digitaltrails/jouno), a Freedesktop notifications
 
 ## How does it work?
 
-*jsonlogalert* reads log file entries line by line and applies a filter to determine entries that are interesting or unusual.
+*jsonlogalert* reads log file entries line by line and applies filter rules to determine entries that are interesting or unusual.
 Typically, expected entries are filtered out. Those remaining are composed in an email message and sent to a server administrator.
 
 The general process:
 
-1. Tail each log [source](#sources) (systemd journal, log files, log streams.)
-2. For each log entry, iterate through [services](#services) to see if any want to [select, drop or ignore](#filters) the entry.
-3. Format log entries using a [template](#templates).
-4. Send content to one or more [outputs](#outputs) (/dev/null, stdout, file, SMTP.)
+1. Iterate through each [log source](#sources) (systemd journal, log files, log streams) and tail log entries starting where the last scan ended.
+2. For each log entry, iterate through the source [services](#services) to see if any want to [claim the entry.](#claiming-log-entries).
+3. Compose content with log entries for each service using a [template](#templates).
+4. Send the content to one or more [outputs](#outputs) (/dev/null, stdout, file, SMTP.)
 
 Services can rewrite fields to create new fields and conceal fields from templates.
 
@@ -46,7 +46,7 @@ Services can rewrite fields to create new fields and conceal fields from templat
 
 	git clone https://github.com/lovette/jsonlogalert.git
 	cd jsonlogalert/
-	./install.sh
+	./install.sh -s .
 
 ### For development
 
@@ -73,82 +73,44 @@ Options specified on the command line override those in configuration files.
 | --help                     | Show usage and exit. |
 
 
-## Configuration
+## Configuration file
 
-Default configuration options can be set in a configuration file (the default is `/etc/jsonlogalert.conf`).
+Default configuration options can be set in a main configuration file (the default is `/etc/jsonlogalert.conf`).
 There are options to control main operations, sources and services, and outputs.
-Options that are specified in source and service configuration files override those in the main configuration file.
+Options that are specified in source `source.yaml` and service `service.yaml` configuration files override those in the main configuration file.
 Options specified on the command line override those in configuration files.
 
-### jsonlogalert.conf
+### Sources and services
 
-#### Sources and services
+| Directive | Command line | Description |
+| --------- | ------------ | ----------- |
+| sources   | -s, --source | Enable only SOURCE; can specify more than once; prefix with `!` to negate; use `*` to enable all sources; valid for main configuration only. |
+| services  | --service    | Enable only SERVICE for a SOURCE; can specify more than once; prefix with `!` to negate; valid for main configuration only. |
 
-| Directive | Command line        | Description |
-| --------- | ------------        | ----------- |
-| sources   | -s, --source SOURCE | Enable only SOURCE; can specify more than once; prefix with `!` to negate; use `*` to enable all sources. |
-| services  | --service SERVICE   | Enable only SERVICE for a SOURCE; can specify more than once; prefix with `!` to negate. |
+### General tail options
 
-#### General options
+| Directive      | Command line     | Description |
+| ---------      | ------------     | ----------- |
+| tail_state_dir | --tail-state-dir | Set path of DIRECTORY to save tail offset/cursor state. [default: /var/lib/misc] |
+| tail_reset     | --tail-reset     | Delete offset/cursor state files and exit. |
+| tail_debug     | --tail-debug     | Use but not update tail offset/cursor. |
+| tail_ignore    | --tail-ignore    | Ignore and do not update tail offset/cursor. |
 
-| Directive                 | Command line               | Description |
-| ---------                 | ------------               | ----------- |
-| tail_state_dir: DIRECTORY | --tail-state-dir DIRECTORY | Set path of DIRECTORY to save tail offset/cursor state. [default: /var/lib/misc] |
-| tail_reset                | --tail-reset               | Delete offset/cursor state files and exit. |
-| tail_debug                | --tail-debug               | Use but not update tail offset/cursor. |
-| tail_ignore               | --tail-ignore              | Ignore and do not update tail offset/cursor. |
+### Journal options
 
-#### Journal options
+| Directive          | Command line          | Description |
+| ---------          | ------------          | ----------- |
+| tail_journal_bin   | --tail-journal-bin    | Set path of executable to tail systemd journal. [default: logtail-journal] |
+| tail_journal_since | --tail-journal-since  | Read all systemd journal entries or since last boot (ignores cursor.) [choices: boot, all] |
 
-| Directive                       | Command line                     | Description |
-| ---------                       | ------------                     | ----------- |
-| tail_journal_bin: FILE          | --tail-journal-bin FILE          | Set path of executable to tail systemd journal. [default: logtail-journal] |
-| tail_journal_since: [boot, all] | --tail-journal-since [boot, all] | Read all systemd journal entries or since last boot (ignores cursor.) |
+### Log file options
 
-#### Log file options
-
-| Directive           | Command line            | Description |
-| ---------           | ------------            | ----------- |
-| tail_file_bin: FILE | --tail-file-bin FILE    | Set path of executable to tail log files. [default: logtail2] |
+| Directive     | Command line    | Description |
+| ---------     | ------------    | ----------- |
+| tail_file_bin | --tail-file-bin | Set path of executable to tail log files. [default: logtail2] |
 
 
-#### General output options
-
-| Directive                       | Command line                    | Description |
-| ---------                       | ------------                    | ----------- |
-| output_devnull                  | --output-devnull                | Output results to /dev/null; that is, output nothing!  |
-| output_stdout                   | --output-stdout                 | Output results to stdout; if used with SMTP output; no email will be sent. |
-| output_template_file: FILENAME  | --output-template-file FILENAME | Use FILENAME instead of default output template. |
-
-#### File
-
-Set either of these options to save output to file.
-
-| Directive                  | Command line                | Description |
-| ---------                  | ------------                | ----------- |
-| output_file_dir: DIRECTORY | --output-file-dir DIRECTORY | Output results to file in DIRECTORY; file names will be based on source and service; default is current working directory. |
-| output_file_name: FILENAME | --output-file-name FILENAME | Output results to FILENAME in `output_file_dir` when a single SERVICE is specified. |
-
-#### SMTP
-
-Set `output_smtp_rcpt` to compose a message and send via SMTP.
-
-| Directive                           | Command line                         | Description |
-| ---------                           | ------------                         | ----------- |
-| output_smtp_rcpt: EMAIL             | --output-smtp-rcpt EMAIL             | Email recipient address. Required. |
-| output_smtp_sender: EMAIL           | --output-smtp-sender EMAIL           | Email sender address. [default: recipient address] |
-| output_smtp_rcpt_name: NAME         | --output-smtp-rcpt-name NAME         | Email recipient name. [default: none] |
-| output_smtp_sender_name: NAME       | --output-smtp-sender-name NAME       | Email sender name. [default: recipient name] |
-| output_smtp_subject: SUBJECT        | --output-smtp-subject SUBJECT        | Email subject line. [default: "Unusual %SERVICEDESC% activity"] |
-| output_smtp_host: HOSTNAME          | --output-smtp-host HOSTNAME          | Mail server hostname or address. [default: localhost] |
-| output_smtp_port: INTEGER           | --output-smtp-port INTEGER           | Mail server port. [default: 25] |
-| output_smtp_auth_ssl                | --output-smtp-auth-ssl               | Mail server uses SSL connection. [default: no] |
-| output_smtp_auth_tls                | --output-smtp-auth-tls               | Mail server uses TLS. [default: no] |
-| output_smtp_auth_username: USERNAME | --output-smtp-auth-username USERNAME | Mail server authentication username. [default: none] |
-| output_smtp_auth_password: PASSWORD | --output-smtp-auth-password PASSWORD | Mail server authentication password. [default: none] |
-
-
-### jsonlogalert.d
+## jsonlogalert.d
 
 [Sources](#sources) and [services](#services) are defined in a set of directories.
 The default configuration root directory is `/etc/jsonlogalert.d`.
@@ -185,57 +147,58 @@ You can see the configuration options for sources and services with `--print-con
 
 ## Sources
 
+Sources define the logs to scan and how to parse them.
 Each top level directory defines a log source, either one or more log files or a systemd journal.
 A source directory must contain a `source.yaml` configuration file that define the options for the source.
 Source configurations inherit and override main configuration options.
 (Relevant command line arguments override all options.)
 If a source only has one service, the service can be defined in the source directory.
-All enabled sources are processed by default.
+All enabled sources are scanned by default.
 Specific sources can be enabled with the `--source` command line option and the `sources` configuration file directive.
 
-### General options
+### Source options
 
 | Directive                   | Type   | Description |
 | -------                     | ----   | ----------- |
-| description                 | string | A description; can reference in SMTP subject as `%SERVICEDESC%` [default: none] |
-| enabled                     | int    | Whether the source should be processed by default [default: 1] |
-| blob_fields                 | list   | Set of fields that 'journalctl' may emit as blobs and should be decoded. [default: none] |
-| capture_fields              | list   | If set, only captured fields are available to output templates. This takes precedence over `ignore_fields`. Merged with service directive. [default: none] |
-| ignore_fields               | list   | If set, ignored fields are not captured so are not available to output templates. Merged with service directive. [default: none] |
-| conceal_fields              | list   | If set, concealed fields are "concealed" to output templates when iterating fields. (All fields are accessible as 'rawfields'.) Only fields that have been captured or not ignored can be concealed. Merged with service directive. Always includes 'timestamp_field' and 'message_field' fields. [default: none] |
-| rewrite_fields              | list   | If set, a set of regular expressions to create new fields with capture groups. [default: none] |
+| description                 | string | Service description; can reference in SMTP subject as `%SERVICEDESC%` [default: none] |
+| enabled                     | int    | Whether the source should be scanned by default. [default: 1] |
+| capture_fields              | list   | Set of fields to capture and made available to templates; takes precedence over `ignore_fields`; merged with service directive. [default: none] |
+| ignore_fields               | list   | Set of fields to not capture, all others are available to templates; merged with service directive. [default: none] |
+| conceal_fields              | list   | Set of fields to "conceal" from templates when iterating fields; merged with service directive; always includes 'timestamp_field' and 'message_field' fields. [default: none] |
+| rewrite_fields              | list   | Set of regular expressions to create new fields with RE named groups. [default: none] |
 | select_rules_path           | string | Path to select rules. [default: select.yaml] |
 | pass_rules_path             | string | Path to pass rules. [default: pass.yaml] |
 | drop_rules_path             | string | Path to drop rules. [default: drop.yaml] |
 | max_logentries              | int    | Maximum number of entries to report; everything else will be discarded. [default: 250] |
 | output_content_type         | string | Output content type. [default: "html"] |
-| output_template_file        | string | Output template file name. Must be in the service, source or source parent directory. [default: none] |
+| output_template_file        | string | Output template file name. Must be in the service, source or source parent directory; can override with command line option `--output-template-file`. [default: none] |
 | output_template_minify_html | int    | True if template content is HTML and should be minified. [default: 1] |
 | timestamp_field             | string | Log entry field that is the event timestamp. [default: "TIMESTAMP"] |
 | message_field               | string | Log entry field that is the event message. [default: "MESSAGE"] |
 
-### Systemd journal options
+### Journal options
 
-The `journal_dir` directive sets the source to be parsed as a systemd journal.
-It can be set to `default` to parse the default systemd journal or another directory containing the journal.
+The `journal_dir` directive defines the source to be a systemd journal.
+It can be set to `default` to scan the default systemd journal or another directory containing the journal.
 
 | Directive   | Type   | Description |
 | ---------   | ------ | ----------- |
 | journal_dir | string | Tail systemd journal DIRECTORY; can override with command line options `-J` or `--journal-dir `|
+| blob_fields | list   | Set of fields that 'journalctl' may emit as blobs and should be decoded [default: ["MESSAGE"]] |
 
 ### Log file options
 
-The `logfiles` directive sets the source to be a set of text files.
+The `logfiles` directive defines the source to be a set of text files.
 
 | Directive | Type   | Description |
 | --------- | ------ | ----------- |
 | logfiles  | list   | Set of log files to read; can override with comand line options `-f` or `--tail-file` or directive `tail_file` [default: 0] |
-| onelog    | int    | Treat all log files for a service as one log; the default is to parse and output each log file individually. [default: 0] |
+| onelog    | int    | Scan all log files for a service as a single log; the default is to scan and output each log file individually. [default: 0] |
 
 
 ### Custom log parsers
 
-Text log files structured as JSON text are parsed by default.
+Text log files structured as JSON text are parsable by default.
 Custom parsers parsers can be implemented for traditional text log files or if you want to customize the field set for JSON logs beyond current capabilities.
 A custom parser is defined in a `source_parser.py` in the source directory.
 The custom parser is used to convert each log line into a dictionary of fields and values.
@@ -244,36 +207,38 @@ You can see examples of this in a few services in `contrib-config.d`.
 
 ## Services
 
+Services define how log entries should be grouped together and which entries are interesting.
 Each subdirectory of a log source defines a service.
+Each source must have at least one service.
 If a source only has one service, the service can be defined in the source directory itself.
 A service directory must contain a `service.yaml` configuration file that define the options for the service.
-Each source must have at least one service.
-Service configuration options inherit and override options from their source and the main configuration.
+Service configuration options inherit and override options from their source and the main configuration file.
 (Relevant command line arguments override all options.)
 Services can define and override the directives defined in its source and the main configuration file.
-All enabled services for enabled sources are processed by default.
+All enabled services for enabled sources are scanned by default.
 Specific services for a source can be enabled with the `--service` command line option and the `services` configuration file directive.
 
 ### Claiming log entries
 
-Each log line is passed to each service until the line is claimed by a service.
-Services are iterated alphabetically.
-Service that don't define any select or drop rules (a so called "catchall" service) will be iterated last for its source.
+Each log entry is passed to each service until the entry is claimed by a service.
+Services are iterated alphabetically. (Typically services begin with a numerical "NN-" prefix to define the order.)
+Services contain a set of files that define [rules](#rules) that determine the log entries associated with the service.
+Service that don't define any rules (a so called "catchall" service) will claim all unclaimed entries and will be iterated last for its source.
 
-| Name        | Directive         | Entries matching rules will be... |
+| Rule file   | Directive         | Matching log entries will be... |
 | ----        | ----------        | ----------- |
 | select.yaml | select_rules_path | ...claimed by the service; select takes precedence over drop and pass rules. |
 | pass.yaml   | pass_rules_path   | ...passed to further services; takes precedence over drop rules. |
-| drop.yaml   | drop_rules_path   | ...claimed by the service but dropped, with no further processing. |
+| drop.yaml   | drop_rules_path   | ...claimed by the service but dropped and not available to templates. |
 
-You can see the configuration options for sources and services with `--print-rules`.
+## Rules
+
+Rule sets are a series of fields and conditions applied to each log entry to determine what action to take.
+Rule files can be defined as YAML or JSON files.
+
+You can see the rules and the order they are applied with `--print-rules`.
 
 	jsonlogalert --print-rules
-
-### Rules
-
-Rule sets are a series of fields and conditions.
-Rules can be defined as YAML or JSON files.
 
 Field operators and values can be specified as strings or lists. The default operator ("OP") is equality (`=`).
 
@@ -341,12 +306,64 @@ JSON:
 | !~       | Not regular expression match |
 
 
+## Outputs
+
+Outputs determine what happens to the content after a service has gathered intersting log entries and composed content using a template.
+If `output_devnull` is enabled, all other outputs are disabled.
+
+### Console
+
+| Directive            | Command line           | Description |
+| ---------            | ------------           | ----------- |
+| output_stdout        | --output-stdout        | Output results to stdout; if used with SMTP output; no email will be sent. |
+| output_devnull       | --output-devnull       | Output results to /dev/null; that is, output nothing!  |
+
+### File
+
+Set either of these options to save output to file.
+File output can be combined with the `output_stdout` and SMTP outputs.
+
+| Directive        | Command line       | Description |
+| ---------        | ------------       | ----------- |
+| output_file_dir  | --output-file-dir  | Output results to file in DIRECTORY; file names will be based on source and service; default is current working directory. |
+| output_file_name | --output-file-name | Output results to FILENAME in `output_file_dir` when a single SERVICE is specified. |
+
+### SMTP
+
+Set `output_smtp_rcpt` to compose a message and send via SMTP.
+If `output_stdout` is enabled, the SMTP message will be output to stdout, which is mostly helpful for debugging.
+
+| Directive                 | Command line                | Description |
+| ---------                 | ------------                | ----------- |
+| output_smtp_rcpt          | --output-smtp-rcpt          | Email recipient address. Required. |
+| output_smtp_sender        | --output-smtp-sender        | Email sender address. [default: recipient address] |
+| output_smtp_rcpt_name     | --output-smtp-rcpt-name     | Email recipient name. [default: none] |
+| output_smtp_sender_name   | --output-smtp-sender-name   | Email sender name. [default: recipient name] |
+| output_smtp_subject       | --output-smtp-subject       | Email subject line. [default: "Unusual %SERVICEDESC% activity"] |
+| output_smtp_host          | --output-smtp-host          | Mail server hostname or address. [default: localhost] |
+| output_smtp_port          | --output-smtp-port          | Mail server port. [default: 25] |
+| output_smtp_auth_ssl      | --output-smtp-auth-ssl      | Mail server uses SSL connection. [default: no] |
+| output_smtp_auth_tls      | --output-smtp-auth-tls      | Mail server uses TLS. [default: no] |
+| output_smtp_auth_username | --output-smtp-auth-username | Mail server authentication username. [default: none] |
+| output_smtp_auth_password | --output-smtp-auth-password | Mail server authentication password. [default: none] |
+
+The sender, recipient and subject options can contain placeholders to be replaced when each message is composed.
+
+| Placeholder    | Value                    |
+| -----------    | -----                    |
+| %HOSTNAME%     | Host name.               |
+| %SOURCENAME%   | Log source name.         |
+| %SERVICENAME%  | Log service name.        |
+| %SERVICEDESC%  | Log service description. |
+
 ## Templates
 
 Templates are used to compose content using log entries claimed by the service.
 Templates are Python [Jinja2 templates](http://jinja.pocoo.org/docs/templates/).
 You can see example templates for services in `contrib-config.d`.
 Templates can create any type of text content.
+
+The general structure of a template is to iterate log entries and show fields of interest.
 
 	{%- set ns = namespace() -%}
 	{%- set ns.tlasttimestamp = None -%}
@@ -443,47 +460,35 @@ Templates access details about log entries, their source and service using templ
 
 #### Log entry properties
 
-Each log entry uses properties to access log entry fields.
-The fields depend on those the source defines.
+Fields for each log entry element in `logentries` are accessed as properties.
+Fields available depend on those the source defines and those [captured](#source-options) by the service.
 
 Standard properties include:
 
 | Property  | Description |
 | -------   | ----------- |
-| fields    | Dictionary of fields, sorted by field name. Does not include concealed fields. |
-| rawfields | Dictionary of all fields that were captured. |
-| timestamp | The entry timestamp. |
-| message   | The entry message. |
+| fields    | Dictionary of captured fields, sorted by field name; does not include concealed fields. |
+| rawfields | Dictionary of all captured fields. |
+| timestamp | Log entry timestamp. |
+| message   | Log entry message. |
 
-Others depend on the source. The systemd journal and the services that log to it include dozens of
+Each log source defines it's own set of fields.
+The systemd journal and the services that log to it include dozens of
 fields such as `_SYSTEMD_UNIT`, `SYSLOG_IDENTIFIER`, and `PRIORITY`.
-
-
-## SMTP Messages
-
-The SMTP configuration options define who and how to send mail.
-The output template defines the message content.
-The sender, recipient and subject options can contain placeholders to be replaced at runtime.
-
-| Placeholder    | Value                    |
-| -----------    | -----                    |
-| %HOSTNAME%     | Host name.               |
-| %SOURCENAME%   | Log source name.         |
-| %SERVICENAME%  | Log service name.        |
-| %SERVICEDESC%  | Log service description. |
 
 
 ## Run periodically or on demand
 
-Jsonlogalert can be run on a scheduled interval or when a log file is modified.
+Logs can be scanned on a scheduled interval or when a log file is modified.
 This can be managed with systemd timer and/or path units.
 Examples are included in the `systemd` directory of the distribution.
 
 ## Python systemd package
 
-Jsonlogalert requires the Python package `systemd` be installed.
+Jsonlogalert requires the `systemd` Python package be installed.
 Depending your operating system, this may be installed and hard-coded to the base distribution Python version.
-We create our virtual environment with `--system-site-packages` and do not include as a `pyproject.toml` `dependencies` so we reference the system installed module.
+We create our virtual environment with `--system-site-packages` and do not include
+in `pyproject.toml` `dependencies` the system installed module is referenced.
 
 You can see that `python3-systemd` is hard-coded to Python 3.9 for Red Hat Enterprise Linux 9.4:
 
