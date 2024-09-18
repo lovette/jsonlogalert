@@ -1,8 +1,10 @@
 name: Release
 
 on:
-  # Allow triggering manually from GitHub UI
-  workflow_dispatch:
+  # Allow triggering manually from GitHub UI.
+  # Note: This apparently doesn't work for making releases because
+  # the tag isn't available to the action.
+  # workflow_dispatch:
 
   push:
     # Run workflow if commit is tagged with a semantic version number.
