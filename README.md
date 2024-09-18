@@ -75,7 +75,8 @@ Options specified on the command line override those in configuration files.
 | -d, --config-dir DIRECTORY | Set path to directory containing source and service definitions.  [default: /etc/jsonlogalert.d] |
 | --print-rules              | Print rules and exit. |
 | --print-conf               | Print source and service configurations and exit. |
-| -v, --verbose              | Be more verbose; can specify more than once. |
+| --dry-run                  | Run without using or updating tail offset/cursor; suppress output with `--output-devnull` |
+| -v, --verbose              | Be more verbose; can specify more than once. [warnings:`-v`, info:`-vv`, debug:`-vvv`] |
 | --version                  | Show the version and exit. |
 | --help                     | Show usage and exit. |
 
@@ -243,10 +244,6 @@ Service that don't define any rules (a so called "catchall" service) will claim 
 Rule sets are a series of fields and conditions applied to each log entry to determine what action to take.
 Rule files can be defined as YAML or JSON files.
 
-You can see the rules and the order they are applied with `--print-rules`.
-
-	jsonlogalert --print-rules
-
 Field operators and values can be specified as strings or lists. The default operator ("OP") is equality (`=`).
 
 	"FIELD": "value"
@@ -311,6 +308,19 @@ JSON:
 | <=       | Less than or equal           |
 | ~        | Regular expression match     |
 | !~       | Not regular expression match |
+
+### Testing rules
+
+Use `--print-rules` to review the rules and the order they are applied.
+
+	jsonlogalert --print-rules
+
+Use `--dry-run` to scan logs without updating offset/cursors and monitor which services claim log entries.
+Use different output options to review generated content.
+
+	jsonlogalert -vv --dry-run --output-devnull
+	jsonlogalert -vv --dry-run --output-stdout
+	jsonlogalert -vv --dry-run --output-file-dir .
 
 
 ## Outputs

@@ -429,6 +429,13 @@ def _override_output_opts(cli_config: dict) -> None:
 )
 @optgroup.group("DIAGNOSTIC OPTIONS")
 @optgroup.option(
+    "--dry-run",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Run without using or updating tail offset/cursor.",
+)
+@optgroup.option(
     "--print-rules",
     type=bool,
     is_flag=True,
@@ -452,6 +459,7 @@ def _override_output_opts(cli_config: dict) -> None:
 def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     ctx: click.Context,
     config_dir: Path,
+    dry_run: bool,
     log_file_streams: tuple[io.TextIOWrapper],
     output_devnull: bool,  ## noqa: ARG001
     output_file_dir: Path,  ## noqa: ARG001
@@ -513,6 +521,11 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     # Click only loads options it knows about, so this is mostly an assertion
     main_conf_check(cli_config, default_config)
+
+    if dry_run:
+        cli_config["tail_debug"] = True
+        cli_config["tail_ignore"] = True
+        cli_config["tail_journal_since"] = "boot"
 
     # Command line overrides source/service output configurations
     _override_output_opts(cli_config)

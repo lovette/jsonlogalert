@@ -43,6 +43,7 @@ MAIN_OPTS_DIRECTIVES = {
 # Some may apply to sources and services.
 
 COMMAND_OPTS_DEFAULTS = {
+    "dry_run": False,
     "journal_dir": None,
     "output_devnull": False,
     "output_file_dir": None,
