@@ -504,10 +504,6 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     logging.debug(f"jsonlogalert version {JSONLOGALERT_VER}")
 
-    if tail_reset:
-        _delete_tail_state_files(tail_state_dir)
-        sys.exit(0)
-
     cli_config = {}
     default_config = {}
 
@@ -521,6 +517,10 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     # Click only loads options it knows about, so this is mostly an assertion
     main_conf_check(cli_config, default_config)
+
+    if tail_reset:
+        _delete_tail_state_files(tail_state_dir)
+        sys.exit(0)
 
     if dry_run:
         cli_config["tail_debug"] = True

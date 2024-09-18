@@ -76,6 +76,7 @@ Options specified on the command line override those in configuration files.
 | --print-rules              | Print rules and exit. |
 | --print-conf               | Print source and service configurations and exit. |
 | --dry-run                  | Run without using or updating tail offset/cursor; suppress output with `--output-devnull` |
+| --tail-reset               | Delete offset/cursor state files and exit. |
 | -v, --verbose              | Be more verbose; can specify more than once. [warnings:`-v`, info:`-vv`, debug:`-vvv`] |
 | --version                  | Show the version and exit. |
 | --help                     | Show usage and exit. |
@@ -100,7 +101,6 @@ Options specified on the command line override those in configuration files.
 | Directive      | Command line     | Description |
 | ---------      | ------------     | ----------- |
 | tail_state_dir | --tail-state-dir | Set path of DIRECTORY to save tail offset/cursor state. [default: /var/lib/misc] |
-| tail_reset     | --tail-reset     | Delete offset/cursor state files and exit. |
 | tail_debug     | --tail-debug     | Use but not update tail offset/cursor. |
 | tail_ignore    | --tail-ignore    | Ignore and do not update tail offset/cursor. |
 

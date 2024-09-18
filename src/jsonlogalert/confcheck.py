@@ -28,6 +28,9 @@ def conf_del_keys(conf: dict, del_keys: Sequence) -> None:
 
 ######################################################################
 # Command line options that only apply to main()
+#
+# Note: "tail_reset" applies only to main but we don't put it here
+# so we can warn when it's included in the config file.
 
 MAIN_OPTS_DIRECTIVES = {
     "config_dir",
@@ -160,7 +163,10 @@ def main_conf_check(cli_config: dict, default_config: dict) -> None:
     bad_directives = (set(cli_config.keys()) | set(default_config.keys())) - COMMAND_OPTS_DIRECTIVES
     if bad_directives:
         bad_directives = "', '".join(sorted(bad_directives))
-        raise LogAlertConfigError(f"Unrecognized configuration directives: ['{bad_directives}']")
+        raise LogAlertConfigError(f"Unrecognized main configuration file directives: ['{bad_directives}']")
+
+    if default_config.get("tail_reset"):
+        raise LogAlertConfigError("Use the '--tail-reset' command line option instead of 'tail_reset' in the configuration file.")
 
 
 def source_conf_check(source: LogSource) -> None:
@@ -175,7 +181,7 @@ def source_conf_check(source: LogSource) -> None:
     bad_directives = set(source.source_config.keys()) - SOURCE_CONFFILE_DIRECTIVES
     if bad_directives:
         bad_directives = "', '".join(sorted(bad_directives))
-        source.config_error(f"Unrecognized source configuration directives: ['{bad_directives}']")
+        source.config_error(f"Unrecognized source configuration file directives: ['{bad_directives}']")
 
 
 def service_conf_check(service: LogService) -> None:
@@ -190,7 +196,7 @@ def service_conf_check(service: LogService) -> None:
     bad_directives = set(service.service_config.keys()) - SERVICE_CONFFILE_DIRECTIVES
     if bad_directives:
         bad_directives = "', '".join(sorted(bad_directives))
-        service.config_error(f"Unrecognized service configuration directives: ['{bad_directives}']")
+        service.config_error(f"Unrecognized service configuration file directives: ['{bad_directives}']")
 
 
 def source_conf_clean(source: LogSource) -> None:
