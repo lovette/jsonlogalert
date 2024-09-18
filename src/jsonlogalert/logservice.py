@@ -407,6 +407,10 @@ class LogService:
         if ns.output_devnull:
             outputs.append(LogAlertOutputToDevNull(self))
         else:
+            if ns.output_smtp_rcpt and not ns.output_smtp:
+                logging.info(f"SMTP is disabled; mail will not be sent to '{ns.output_smtp_rcpt}'")
+                ns.output_smtp_rcpt = None
+
             if ns.output_file_dir or ns.output_file_name:
                 outputs.append(LogAlertOutputToFile(self))
 
@@ -417,7 +421,7 @@ class LogService:
                 outputs.append(LogAlertOutputToStdout(self))
 
         if not outputs:
-            self.log_warning("No outputs are configured")
+            self.log_warning("No outputs are enabled")
 
         return outputs
 

@@ -62,6 +62,7 @@ COMMAND_OPTS_DEFAULTS = {
     "output_smtp_sender_name": None,
     "output_smtp_sender": None,
     "output_smtp_subject": None,
+    "output_smtp": True,
     "output_stdout": False,
     "output_template_file": None,
     "services": (),

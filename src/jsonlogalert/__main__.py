@@ -341,6 +341,12 @@ def _override_output_opts(cli_config: dict) -> None:
 )
 @optgroup.group("SMTP OUTPUT OPTIONS")
 @optgroup.option(
+    "--output-smtp/--no-output-smtp",
+    default=True,
+    show_default=True,
+    help="Enable SMTP output.",
+)
+@optgroup.option(
     "--output-smtp-host",
     type=str,
     default="localhost",
@@ -464,6 +470,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     output_devnull: bool,  ## noqa: ARG001
     output_file_dir: Path,  ## noqa: ARG001
     output_file_name: str,
+    output_smtp: bool,  ## noqa: ARG001
     output_smtp_auth_password: str,  ## noqa: ARG001
     output_smtp_auth_ssl: bool,  ## noqa: ARG001
     output_smtp_auth_tls: bool,  ## noqa: ARG001

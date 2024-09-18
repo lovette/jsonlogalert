@@ -326,7 +326,8 @@ Use different output options to review generated content.
 ## Outputs
 
 Outputs determine what happens to the content after a service has gathered intersting log entries and composed content using a template.
-If `output_devnull` is enabled, all other outputs are disabled.
+If an output is specified on the command line, all other outputs are disabled.
+If the "devnull" output is enabled, all outputs are disabled and nothing will be output.
 
 ### Console
 
