@@ -49,19 +49,21 @@ Services can rewrite fields to create new fields and conceal fields from templat
 
 	sudo -v; curl -sSf https://raw.githubusercontent.com/lovette/jsonlogalert/main/install.sh | sudo bash
 
-### From source
+### Repo
 
 	git clone https://github.com/lovette/jsonlogalert.git
-	cd jsonlogalert/
-	./install.sh -s .
+	./install.sh -s jsonlogalert/
 
-### For development
+Installing from source will:
 
-	git clone https://github.com/lovette/jsonlogalert.git
-	cd jsonlogalert/
-	make virtualenv
-	make install-dev
+- Copy README and LICENSE to `/opt/jsonlogalert`.
+- Create a Python virtual environment in `/opt/jsonlogalert/.venv`.
+- Copy a few scripts to `/usr/local/bin`.
+- Copy default configuration file and directory to `/etc`.
+- Copy logtail2 rotation rules to `/usr/share/logtail`.
+- Copy man pages to `/usr/share/man`.
 
+Adding the directory `/usr/local/bin` to your `$PATH` will simplify running jsonlogalert.
 
 ## Command line
 
@@ -69,18 +71,21 @@ There are two sets of command line options. The options below control main opera
 for a lot of the configuration directives that apply to [sources](#sources) and [services](#services).
 Options specified on the command line override those in configuration files.
 
-| Option                     | Description |
-| ------                     | ----------- |
-| -c, --config-file FILE     | Read options from configuration FILE. [default: /etc/jsonlogalert.conf] |
-| -d, --config-dir DIRECTORY | Set path to directory containing source and service definitions.  [default: /etc/jsonlogalert.d] |
-| --print-rules              | Print rules and exit. |
-| --print-conf               | Print source and service configurations and exit. |
-| --dry-run                  | Run without using or updating tail offset/cursor; suppress output with `--output-devnull` |
-| --tail-reset               | Delete offset/cursor state files and exit. |
-| -v, --verbose              | Be more verbose; can specify more than once. [warnings:`-v`, info:`-vv`, debug:`-vvv`] |
-| --version                  | Show the version and exit. |
-| --help                     | Show usage and exit. |
+| Option            | Description |
+| ------            | ----------- |
+| -c, --config-file | Read options from configuration FILE. [default: /etc/jsonlogalert.conf] |
+| -d, --config-dir  | Set path to directory containing source and service definitions.  [default: /etc/jsonlogalert.d] |
+| --print-rules     | Print rules and exit. |
+| --print-conf      | Print source and service configurations and exit. |
+| --dry-run         | Run without using or updating tail offset/cursor; suppress output with `--output-devnull` |
+| --tail-reset      | Delete offset/cursor state files and exit. |
+| -v, --verbose     | Be more verbose; can specify more than once. [warnings:`-v`, info:`-vv`, debug:`-vvv`] |
+| --version         | Show the version and exit. |
+| --help            | Show usage and exit. |
 
+A complete listing of command line options is shown with `--help`.
+
+	jsonlogalert --help
 
 ## Configuration file
 
@@ -515,3 +520,10 @@ You can see that `python3-systemd` is hard-coded to Python 3.9 for Red Hat Enter
 If your installation does not have the package, you can review installation instructions
 on the [systemd GitHub repo](https://github.com/systemd/python-systemd).
 (Be aware there are variations of 'python-systemd' that are not from the official 'systemd'.)
+
+## Install for development
+
+	git clone https://github.com/lovette/jsonlogalert.git
+	cd jsonlogalert/
+	make virtualenv
+	make install-dev
