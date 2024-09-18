@@ -2,12 +2,8 @@ FROM docker.io/library/debian:latest
 
 RUN set -eux; \
 	apt-get update; \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends man python3 python3-venv python3-systemd; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends man python3 python3-venv python3-systemd curl; \
     rm -rf /var/lib/apt/lists/*
-
-COPY . /opt/jsonlogalert
-
-WORKDIR /opt/jsonlogalert
 
 RUN set -eux; \
     mkdir /tmp/pycache; \
@@ -18,8 +14,15 @@ ENV PYTHONPYCACHEPREFIX=/tmp/pycache
 # Set to install from source; unset to install from latest GitHub release
 ENV SRCDIR=/opt/jsonlogalert
 
+COPY ./install.sh /root
+COPY . /opt/jsonlogalert
+
+# Install from outside SRCDIR to make sure we're
+# not taking relative paths for granted.
+WORKDIR /root
+
 RUN set -eux; \
-    ./install.sh
+    ./install.sh -d
 
 ENV PATH="/usr/local/bin:$PATH"
 

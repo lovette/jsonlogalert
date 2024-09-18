@@ -270,10 +270,9 @@ parse_args()
 }
 install_etc()
 {
-  srcdir="$1"
   install -d "${ETCDIR}"
-  install "${srcdir}"/default-config.yaml "${ETCDIR}"/jsonlogalert.conf
-  (cd /opt/jsonlogalert/default-config.d && find . -type f -exec install -D "{}" "/etc/jsonlogalert.d/{}" \;)
+  install default-config.yaml "${ETCDIR}"/jsonlogalert.conf
+  (cd default-config.d && find . -type f -exec install -D "{}" "/etc/jsonlogalert.d/{}" \;)
 }
 install_extras()
 {
@@ -290,7 +289,7 @@ install_stub()
   target="${STUBBIN##*/}" # foo.sh
   target="${target%.sh}"  # foo
   target="${BINDIR}/${target}"
-  if ! test -f "$STUBBIN"; then
+  if ! test -f "${STUBBIN}"; then
     log_err "${STUBBIN}: No such file"
     exit 1
   fi
@@ -300,13 +299,8 @@ install_stub()
 }
 install_venv()
 {
-  srcdir="$1"
   arg_editable=""
   jsonlogalert_bin="${VENVDIR}"/bin/jsonlogalert
-  if ! test -d "$srcdir"; then
-    log_err "${srcdir}: No such directory"
-    exit 1
-  fi
   log_info "Creating virtual environment ${VENVDIR}"
   log_info "To activate 'source ${VENVDIR}/bin/activate'"
   python3 -m venv --system-site-packages --prompt "${VENVPROMPT}" "${VENVDIR}" 2>&1 | sed "s/^/$LOGPREFIX info > /"
@@ -322,7 +316,7 @@ install_venv()
     log_info "Installing requirements to ${VENVDIR} (editable)..."
     arg_editable="-e"
   fi
-  "${VENVDIR}"/bin/python -m pip install --require-virtualenv --upgrade -r requirements.txt $arg_editable "${srcdir}" 2>&1 | sed "s/^/$LOGPREFIX info > /"
+  "${VENVDIR}"/bin/python -m pip install --require-virtualenv --upgrade -r requirements.txt $arg_editable . 2>&1 | sed "s/^/$LOGPREFIX info > /"
   if ! test -f "${jsonlogalert_bin}"; then
     log_err "${jsonlogalert_bin}: Failed to install"
     exit 1
@@ -334,25 +328,19 @@ install_venv()
 }
 install_binaries()
 {
-  srcdir=$(readlink -f "${1}")
-  if ! test -d "$srcdir"; then
-    log_err "${srcdir}: No such directory"
-    exit 1
-  fi
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
   for binary in $BINARIES; do
-    source="${srcdir}/${binary}"
     target="${binary##*/}" # foo.sh
     target="${target%.sh}" # foo
     target="${BINDIR}/${target}"
-    if ! test -f "${source}"; then
-      log_err "${source}: No such file"
+    if ! test -f "${binary}"; then
+      log_err "${binary}: No such file"
       exit 1
     elif test -n "$ARG_INSTALL_EDITABLE"; then
-      ln -sf "${source}" "${target}"
+      ln -sf "${binary}" "${target}"
       log_info "Installed ${target} (editable)"
     else
-      install "${source}" "${target}"
+      install "${binary}" "${target}"
       log_info "Installed ${target}"
     fi
   done
@@ -360,26 +348,29 @@ install_binaries()
 install_local()
 {
   srcdir=$(readlink -f "$1")
-  install_venv "${srcdir}"
-  install_binaries "${srcdir}"
-  install_etc "${srcdir}"
-  install_stub
-  install_extras
+  log_debug "install srcdir is '${srcdir}'"
+  (
+    cd "${srcdir}" || exit 1
+    install_venv
+    install_binaries
+    install_etc
+    install_stub
+    install_extras
+  )
 }
 install_release()
 {
   release_ver="$1"
-  tarball_untar_dir="${GITHUB_REPO}-${release_ver}"
-  tarball_name="${tarball_untar_dir}.${TARBALL_FORMAT}"
+  tarball_name="${GITHUB_REPO}-${release_ver}.${TARBALL_FORMAT}"
   tarball_url="${GITHUB_DOWNLOAD}/${release_ver}.${TARBALL_FORMAT}"
-  # mktemp will create a subdirectory of '$TMPDIR' if set
+  tarball_untar_dir="${GITHUB_REPO}-${release_ver#v}"
   tmpdir=$(mktemp -d)
   trap 'rm -rf -- "${tmpdir}"' EXIT
   if ! test -d "${tmpdir}"; then
     log_err "${tmpdir}: No such directory"
     exit 1
   fi
-  log_debug "downloading files into ${tmpdir}"
+  log_debug "downloading file as '${tmpdir}/${tarball_name}'"
   http_download "${tmpdir}/${tarball_name}" "${tarball_url}"
   (cd "${tmpdir}" && untar "${tarball_name}")
   install_local "${tmpdir}/${tarball_untar_dir}"
@@ -415,7 +406,6 @@ main()
   parse_args "$@"
   VENVDIR="${VENVROOT}/${GITHUB_REPO}"
   if test -n "${TMPDIR}"; then
-    # mktemp fails if '$TMPDIR' is set but does not exist
     if ! test -d "${TMPDIR}"; then
       log_err "TMPDIR=${TMPDIR}: No such directory"
       exit 1
