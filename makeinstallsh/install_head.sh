@@ -5,7 +5,8 @@ set -e
 GITHUB_OWNER="lovette"
 GITHUB_REPO="jsonlogalert"
 OWNER_REPO="$GITHUB_OWNER/$GITHUB_REPO"
-VENVROOT_DEFAULT="${HOME}/.venv"
+OPTDIR=/opt/"$GITHUB_REPO"
+VENVROOT_DEFAULT="${OPTDIR}/.venv"
 BINDIR_DEFAULT="/usr/local/bin"
 
 usage()

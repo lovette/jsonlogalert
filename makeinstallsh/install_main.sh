@@ -49,13 +49,14 @@ install_etc()
 
 install_extras()
 {
+  install -m 644 *.md "${OPTDIR}"/
+
   install -d "${LOGTAILDTRDIR}"
+  install -m 644 logtail-logcheck/detectrotate/* "${LOGTAILDTRDIR}"/
+  log_info "Installed ${LOGTAILDTRDIR}"
 
   gzip -c man/jsonlogalert.1 >"${MANDIR}"/man1/jsonlogalert.1.gz
   log_info "Installed ${MANDIR}/man1/jsonlogalert.1.gz"
-
-  install -m 644 logtail-logcheck/detectrotate/* "${LOGTAILDTRDIR}"/
-  log_info "Installed ${LOGTAILDTRDIR}"
 
   gzip -c logtail-logcheck/logtail2.8 >"${MANDIR}"/man8/logtail2.8.gz
   log_info "Installed ${MANDIR}/man8/logtail2.8.gz"
@@ -142,6 +143,8 @@ install_local()
   srcdir=$(readlink -f "$1")
 
   log_debug "install srcdir is '${srcdir}'"
+
+  install -d "${OPTDIR}"
 
   (
     cd "${srcdir}" || exit 1

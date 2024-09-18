@@ -1,9 +1,9 @@
 # Only COPY what is necessary for install.sh
 *
+!*.md
 !default-config*
 !install.sh
 !jsonlogalert.sh
-!LICENSE.md
 !logtail-journal
 !logtail-logcheck
 !man

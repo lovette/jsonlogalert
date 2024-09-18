@@ -12,10 +12,10 @@ RUN set -eux; \
 ENV PYTHONPYCACHEPREFIX=/tmp/pycache
 
 # Set to install from source; unset to install from latest GitHub release
-ENV SRCDIR=/opt/jsonlogalert
+ENV SRCDIR=/tmp/jsonlogalert
 
 COPY ./install.sh /root
-COPY . /opt/jsonlogalert
+COPY . /tmp/jsonlogalert
 
 # Install from outside SRCDIR to make sure we're
 # not taking relative paths for granted.

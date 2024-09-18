@@ -9,7 +9,8 @@ set -e
 GITHUB_OWNER="lovette"
 GITHUB_REPO="jsonlogalert"
 OWNER_REPO="$GITHUB_OWNER/$GITHUB_REPO"
-VENVROOT_DEFAULT="${HOME}/.venv"
+OPTDIR=/opt/"$GITHUB_REPO"
+VENVROOT_DEFAULT="${OPTDIR}/.venv"
 BINDIR_DEFAULT="/usr/local/bin"
 
 usage()
@@ -276,11 +277,12 @@ install_etc()
 }
 install_extras()
 {
+  install -m 644 *.md "${OPTDIR}"/
   install -d "${LOGTAILDTRDIR}"
-  gzip -c man/jsonlogalert.1 >"${MANDIR}"/man1/jsonlogalert.1.gz
-  log_info "Installed ${MANDIR}/man1/jsonlogalert.1.gz"
   install -m 644 logtail-logcheck/detectrotate/* "${LOGTAILDTRDIR}"/
   log_info "Installed ${LOGTAILDTRDIR}"
+  gzip -c man/jsonlogalert.1 >"${MANDIR}"/man1/jsonlogalert.1.gz
+  log_info "Installed ${MANDIR}/man1/jsonlogalert.1.gz"
   gzip -c logtail-logcheck/logtail2.8 >"${MANDIR}"/man8/logtail2.8.gz
   log_info "Installed ${MANDIR}/man8/logtail2.8.gz"
 }
@@ -349,6 +351,7 @@ install_local()
 {
   srcdir=$(readlink -f "$1")
   log_debug "install srcdir is '${srcdir}'"
+  install -d "${OPTDIR}"
   (
     cd "${srcdir}" || exit 1
     install_venv
