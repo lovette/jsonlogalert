@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
@@ -77,6 +78,9 @@ class LogAlertOutputToFile(LogAlertOutput):
 
         if not self.output_file_dir.is_dir():
             self.config_error("Cannot save output", f"{self.output_file_dir}: No such directory")
+
+        if not os.access(self.output_file_dir, os.W_OK | os.X_OK):
+            self.config_error(f"'output_file_dir' '{self.output_file_dir}' requires write permission")
 
     def _savefile(self, output_path: Path, content: str) -> None:
         """Save file to output directory.

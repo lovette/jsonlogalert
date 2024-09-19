@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 import importlib.util
 import logging
+import os
 import re
 import subprocess
 from functools import cached_property
@@ -428,7 +429,9 @@ class LogSource:
         if not self.tail_state_dir:
             self.config_error("'tail_state_dir' directive is not set.")
         if not self.tail_state_dir.is_dir():
-            self.config_error(f"{self.tail_state_dir}: No such directory")
+            self.config_error(f"'{self.tail_state_dir}': No such directory")
+        if not os.access(self.tail_state_dir, os.W_OK | os.X_OK):
+            self.config_error(f"'tail_state_dir' '{self.tail_state_dir}' requires write permission")
 
         catchalls = [service.name for service in self.services if service.is_catchall]
         if len(catchalls) > 1:
