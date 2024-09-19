@@ -48,6 +48,7 @@ MAIN_OPTS_DIRECTIVES = {
 COMMAND_OPTS_DEFAULTS = {
     "dry_run": False,
     "journal_dir": None,
+    "max_logentries": 250,
     "output_devnull": False,
     "output_file_dir": None,
     "output_file_name": None,
@@ -97,7 +98,6 @@ SERVICE_CONF_DEFAULTS = COMMAND_OPTS_DEFAULTS | {
     "drop_rules_path": None,
     "enabled": True,
     "ignore_fields": None,
-    "max_logentries": 250,
     "output_content_type": None,
     "output_template_minify_html": False,
     "pass_rules_path": None,

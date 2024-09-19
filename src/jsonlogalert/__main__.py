@@ -321,6 +321,13 @@ def _override_output_opts(cli_config: dict) -> None:
     metavar="FILENAME",
     help="Use FILENAME instead of default output template.",
 )
+@optgroup.option(
+    "--max-logentries",
+    type=int,
+    default=250,
+    show_default=True,
+    help="Maximum number of entries to report.",
+)
 @optgroup.group("FILE OUTPUT OPTIONS")
 @optgroup.option(
     "--output-file-dir",
@@ -468,11 +475,12 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     ctx: click.Context,
     config_dir: Path,
     dry_run: bool,
+    journal_dir: Path,  ## noqa: ARG001
     log_file_streams: tuple[io.TextIOWrapper],
+    max_logentries: int,  ## noqa: ARG001
     output_devnull: bool,  ## noqa: ARG001
     output_file_dir: Path,  ## noqa: ARG001
     output_file_name: str,
-    output_smtp: bool,  ## noqa: ARG001
     output_smtp_auth_password: str,  ## noqa: ARG001
     output_smtp_auth_ssl: bool,  ## noqa: ARG001
     output_smtp_auth_tls: bool,  ## noqa: ARG001
@@ -484,10 +492,11 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     output_smtp_sender_name: str,  ## noqa: ARG001
     output_smtp_sender: str,  ## noqa: ARG001
     output_smtp_subject: str,  ## noqa: ARG001
+    output_smtp: bool,  ## noqa: ARG001
     output_stdout: bool,  ## noqa: ARG001
     output_template_file: str,  ## noqa: ARG001
-    print_rules: bool,
     print_conf: bool,
+    print_rules: bool,
     services: tuple[str],  ## noqa: ARG001
     sources: tuple[str],  ## noqa: ARG001
     tail_debug: bool,  ## noqa: ARG001
@@ -495,7 +504,6 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     tail_file_paths: tuple[Path],
     tail_ignore: bool,  ## noqa: ARG001
     tail_journal_bin: Path,  ## noqa: ARG001
-    journal_dir: Path,  ## noqa: ARG001
     tail_journal_since: str,  ## noqa: ARG001
     tail_reset: bool,
     tail_state_dir: Path,
