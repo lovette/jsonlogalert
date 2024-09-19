@@ -414,6 +414,9 @@ class LogSource:
         for log_service in self.services:
             log_service.output()
 
+            # Micro optimization - release logentries after output.
+            log_service.reset(self)
+
     def validate_conf(self) -> None:
         """Review source configuration directives and see if they make sense."""
         if not self.message_field_default:
