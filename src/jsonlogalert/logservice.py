@@ -47,6 +47,8 @@ class LogService:
 
         # These need to be reset() between iterations
         self.discard_count = 0
+        self.pass_count = 0
+        self.drop_count = 0
         self.logentries: List[LogEntry] = None
 
     def __repr__(self) -> str:
@@ -292,10 +294,12 @@ class LogService:
 
         # Pass means: Entry belongs to us but let someone else deal with it.
         if self.pass_rules and FieldRule.match_rules(service_rawfields, self.pass_rules):
+            self.pass_count += 1
             return False
 
         # Drop means: Entry belongs to us but we don't care about it.
         if self.drop_rules and FieldRule.match_rules(service_rawfields, self.drop_rules):
+            self.drop_count += 1
             return True
 
         # Capture/ignore fields as configured
@@ -370,14 +374,17 @@ class LogService:
 
     def reset(self, log_source: LogSource) -> None:
         """Reset service internals to prepare for another source log iteration."""
+        self.source = log_source  # change so our 'name' reflects new source
+
         self.discard_count = 0
+        self.pass_count = 0
+        self.drop_count = 0
 
         # Empty (and release memory held by) log entries and prepare for the next source log iteration.
         # https://stackoverflow.com/questions/12417498/how-to-release-used-memory-immediately-in-python-list
         # "If sys.getrefcount gives you 2, that means you are the only one who had the reference of the object"
         self.logentries = None
         self.logentries = []
-        self.source = log_source  # change so our 'name' reflects new source
 
     def validate_conf(self) -> None:
         """Review service rules and see if they make sense."""
@@ -432,9 +439,9 @@ class LogService:
             output (LogAlertOutput): Output target.
         """
         if self.discard_count:
-            self.log_warning(f"Claimed {len(self.logentries)} log entries; {self.discard_count} were discarded")
+            self.log_warning(f"claimed:{len(self.logentries)} passed:{self.pass_count} dropped:{self.drop_count}; discarded:{self.discard_count}")
         else:
-            self.log_info(f"Claimed {len(self.logentries)} log entries")
+            self.log_info(f"claimed:{len(self.logentries)} passed:{self.pass_count} dropped:{self.drop_count}")
 
         if self.has_entries:
             # We create outputs for each output() so memory is released between services
