@@ -198,7 +198,11 @@ class LogService:
         Raises:
             LogAlertConfigError: Load config failure.
         """
-        self.service_config = self._load_config_json(self.service_config_path)
+        try:
+            # Config file must exist but can be empty
+            self.service_config = read_config_file(self.service_config_path) or {}
+        except LogAlertConfigError as err:
+            self.config_error(f"Failed to read configuration file '{self.service_config_path.name}'", err)
 
         # Sanity check configuration settings (it's easy to get confused what option goes where!)
         service_conf_check(self)
@@ -249,29 +253,6 @@ class LogService:
             if self.drop_rules:
                 echo("> Entries matching these rules will be DROPPED:")
                 FieldRule.print_rules(self.drop_rules)
-
-    def _load_config_json(self, config_path: Path) -> dict[str, Any]:
-        """Load a service JSON configuration file.
-
-        Returns an empty dict if configuration file does not exist or is empty.
-
-        Args:
-            config_path (Path): Configuration file path.
-
-        Returns:
-            dict[str, Any]
-
-        Raises:
-            LogAlertConfigError: Failed to load configuration.
-        """
-        service_config = {}
-
-        try:
-            service_config = read_config_file(config_path)
-        except LogAlertConfigError as err:
-            self.config_error(f"Failed to open config file '{config_path.name}'", err)
-
-        return service_config
 
     def claim_entry(self, log_entry: LogEntry) -> bool:
         """Evaluate a LogEntry and determine if this service claims it.
@@ -360,7 +341,11 @@ class LogService:
         Raises:
             LogAlertConfigError: Invalid rules.
         """
-        rules_config = self._load_config_json(rules_config_path)
+        try:
+            rules_config = read_config_file(rules_config_path)
+        except LogAlertConfigError as err:
+            self.config_error(f"Failed to read rules file '{rules_config_path.name}'", err)
+
         if not rules_config:
             return None
 
