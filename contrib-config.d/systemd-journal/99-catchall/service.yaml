@@ -1,2 +1,0 @@
-description: "other services"
-output_smtp_subject: "Unusual activity for %SERVICEDESC%"

@@ -16,7 +16,7 @@ from jsonlogalert.logalertoutput import LogAlertOutput
 if TYPE_CHECKING:
     from jsonlogalert.logservice import LogService
 
-SMTP_SUBJECT_DEFAULT = "Log alert for %HOSTNAME%"
+SMTP_SUBJECT_DEFAULT = "Unusual activity for %SERVICEDESC%"
 
 
 ######################################################################

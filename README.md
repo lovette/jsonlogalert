@@ -362,7 +362,7 @@ If `output_stdout` is enabled, the SMTP message will be output to stdout, which 
 | output_smtp_sender        | --output-smtp-sender        | Email sender address. [default: recipient address] |
 | output_smtp_rcpt_name     | --output-smtp-rcpt-name     | Email recipient name. [default: none] |
 | output_smtp_sender_name   | --output-smtp-sender-name   | Email sender name. [default: recipient name] |
-| output_smtp_subject       | --output-smtp-subject       | Email subject line. [default: "Unusual %SERVICEDESC% activity"] |
+| output_smtp_subject       | --output-smtp-subject       | Email subject line. [default: "Unusual activity for %SERVICEDESC%"] |
 | output_smtp_host          | --output-smtp-host          | Mail server hostname or address. [default: localhost] |
 | output_smtp_port          | --output-smtp-port          | Mail server port. [default: 25] |
 | output_smtp_auth_ssl      | --output-smtp-auth-ssl      | Mail server uses SSL connection. [default: no] |
