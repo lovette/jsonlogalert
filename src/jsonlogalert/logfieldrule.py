@@ -3,8 +3,14 @@ from __future__ import annotations
 import operator
 import re
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from click import echo
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from jsonlogalert.logservice import LogService
 
 _RULE_OPERATORS = {
     "=": operator.eq,
@@ -67,15 +73,20 @@ class FieldRule:
         return f"{negate}{self.rule_op}{self.rule_value}"
 
     @staticmethod
-    def build_rules(rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901
+    def build_rules(service: LogService, rules_path: Path, rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901
         """Build rules for a configuration.
 
         Args:
+            service (LogService): Log service rules are for.
+            rules_path (Path): Path of rules file.
             rules_config (list): Blocks of field rules.
 
         Returns:
             tuple[dict[str, FieldRule]]
         """
+
+        def _rule_warning(message: str) -> None:
+            service.log_warning(f"'{rules_path.name}': {message}")
 
         def _build_field_rules(rule_op: str, rule_values: list) -> FieldRule:
             """Build rule for an individual field."""
@@ -97,7 +108,7 @@ class FieldRule:
 
             return field_rule
 
-        def _build_block_rules(field_block: dict) -> dict[str, FieldRule]:
+        def _build_block_rules(field_block: dict) -> dict[str, FieldRule]:  # noqa: C901
             """Build ruleset for an individual block of field rules."""
             assert isinstance(field_block, dict)
 
@@ -116,15 +127,20 @@ class FieldRule:
                                 rule_op = op
                                 rule_op_value.pop(0)
                                 break
-                else:
+                elif isinstance(rule_op_value, str):
                     for op in FieldRule.RULE_OPERATORS:
                         if rule_op_value.startswith(op):
                             rule_op = op
                             rule_op_value = rule_op_value.removeprefix(op)
                             break
                     rule_op_value = [rule_op_value]
+                elif isinstance(rule_op_value, (int, bool)):
+                    rule_op_value = [rule_op_value]
+                else:
+                    _rule_warning(f"'{rule_field}': '{rule_op_value}': Unexpected type: {type(rule_op_value).__name__} ")
+                    rule_op_value = [str(rule_op_value)]
 
-                if rule_op is None:
+                if not rule_op:
                     rule_op = "="
 
                 field_fns[rule_field] = _build_field_rules(rule_op, rule_op_value)

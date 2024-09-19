@@ -355,7 +355,7 @@ class LogService:
         if not isinstance(rules_config, list):
             self.config_error(f"Invalid rules configuration: {rules_config_path.name}: rules must be key/value pairs")
 
-        return FieldRule.build_rules(rules_config)
+        return FieldRule.build_rules(self, rules_config_path, rules_config)
 
     def reset(self, log_source: LogSource) -> None:
         """Reset service internals to prepare for another source log iteration."""
