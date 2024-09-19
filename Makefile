@@ -135,7 +135,7 @@ distclean:  ## Delete build files, python cache and package build artifacts
 	rm -rf build
 	rm -rf dist
 	rm -rf src/*.egg-info
-	rm -rf ruff_cache
+	rm -rf .ruff_cache
 	find . -type d \( -name __pycache__ \) -print -exec rm -rf {} +
 
 ############################
