@@ -12,7 +12,7 @@ from click.core import ParameterSource
 from click_option_group import optgroup
 
 from jsonlogalert.confcheck import MAIN_OPTS_DIRECTIVES, main_conf_check
-from jsonlogalert.exceptions import LogAlertConfigError
+from jsonlogalert.exceptions import LogAlertConfigError, LogAlertTailError
 from jsonlogalert.logsource import LogSource
 from jsonlogalert.logsource_journal import LogSourceSystemdJournal
 from jsonlogalert.utils import read_config_file, resolve_rel_path
@@ -604,7 +604,13 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     for log_source in log_sources:
         log_source.reset()
-        log_source.tail_source()
+
+        try:
+            log_source.tail_source()
+        except LogAlertTailError as err:
+            # Not fatal, output whatever may have been streamed
+            logging.error(f"{err}")  # noqa: TRY400
+
         log_source.output()
 
     logging.debug("Done!")
