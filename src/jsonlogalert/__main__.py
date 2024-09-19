@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import importlib.metadata
 import io
 import logging
 import shutil
@@ -16,7 +17,8 @@ from jsonlogalert.logsource import LogSource
 from jsonlogalert.logsource_journal import LogSourceSystemdJournal
 from jsonlogalert.utils import read_config_file, resolve_rel_path
 
-JSONLOGALERT_VER = "0.1"
+# Reference version number in pyproject.toml
+__version__ = importlib.metadata.version("jsonlogalert")
 
 VERBOSE_LOGGING_LEVELS = (
     logging.ERROR,  # default
@@ -183,7 +185,7 @@ def _override_output_opts(cli_config: dict) -> None:
     help="Be more verbose; can specify more than once.",
 )
 @click.version_option(
-    version=JSONLOGALERT_VER,
+    version=__version__,
     prog_name="jsonlogalert",
     message="%(prog)s version %(version)s",
 )
@@ -509,7 +511,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     loglevel = VERBOSE_LOGGING_LEVELS[min(verbose, len(VERBOSE_LOGGING_LEVELS) - 1)]
     logging.getLogger().setLevel(loglevel)
 
-    logging.debug(f"jsonlogalert version {JSONLOGALERT_VER}")
+    logging.debug(f"jsonlogalert version {__version__}")
 
     cli_config = {}
     default_config = {}
