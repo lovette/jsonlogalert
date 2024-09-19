@@ -162,6 +162,33 @@ class LogService:
         return resolve_rel_path(drop_rules_path or "drop.yaml", self.service_confdir_path)
 
     @cached_property
+    def field_types(self) -> dict[str, type]:
+        """Field type conversions.
+
+        Raises:
+            LogAlertConfigError: Invalid configuration.
+
+        Returns:
+            dict[str, type]
+        """
+        field_types = self.service_config.get("field_types")
+        if not field_types:
+            return None
+
+        if not isinstance(field_types, dict):
+            self.config_error("Invalid configuration: 'field_types' must be key/value pairs.")
+
+        for k, v in field_types.items():
+            if v == "int":
+                field_types[k] = int
+            elif v == "bool":
+                field_types[k] = bool
+            else:
+                self.config_error(f"Invalid configuration: 'field_types': '{k}' choices are ['int', 'bool'].")
+
+        return field_types
+
+    @cached_property
     def rewrite_fields(self) -> Sequence[tuple[str, re.Pattern]]:
         """Patterns used to rewrite field values.
 
@@ -189,7 +216,7 @@ class LogService:
 
         return tuple(rewrite_field_patterns)
 
-    def load_conf(self, cli_config: dict[str, Any]) -> None:
+    def load_conf(self, cli_config: dict[str, Any]) -> None:  # noqa: C901, PLR0912
         """Load service configuration.
 
         Args:
@@ -212,17 +239,32 @@ class LogService:
         # Always conceal timestamp and message
         merged_fields["conceal_fields"] = {self.source.timestamp_field, self.source.message_field}
 
-        # Merge conceal fields before merging configs (which will overwrite the directive)
+        # Merge field set() before merging configs (which will overwrite the directive)
         for directive in ("capture_fields", "ignore_fields", "conceal_fields"):
             for fields in (self.source.source_config.get(directive), self.service_config.get(directive)):
                 if fields:
+                    if not isinstance(fields, list):
+                        self.config_error(f"'{directive}': Must be a list of field names.")
                     if directive in merged_fields:
                         merged_fields[directive] |= set(fields)
                     else:
                         merged_fields[directive] = set(fields)
 
+        # Merge field dict() before merging configs (which will overwrite the directive)
+        for directive in ("field_types",):
+            for fields in (self.source.source_config.get(directive), self.service_config.get(directive)):
+                if fields:
+                    if not isinstance(fields, dict):
+                        self.config_error(f"'{directive}': Must be a list of 'field: type' pairs.")
+                    if directive in merged_fields:
+                        merged_fields[directive] |= fields
+                    else:
+                        merged_fields[directive] = fields
+
         # Merge configs in order of precedence
-        self.service_config = SERVICE_CONF_DEFAULTS | self.source.source_config | self.service_config | cli_config | merged_fields
+        self.service_config = dict(
+            sorted((SERVICE_CONF_DEFAULTS | self.source.source_config | self.service_config | cli_config | merged_fields).items())
+        )
 
         # Delete settings that do not pertain to services and don't need to show up in print_conf()
         service_conf_clean(self)
@@ -269,6 +311,12 @@ class LogService:
         # but don't change 'LogEntry.rawfields' until *after* we claim the entry.
         service_rawfields = (log_entry.rawfields | rewrittenfields) if rewrittenfields else log_entry.rawfields
 
+        # Convert fields to native types (same function as source.field_converters)
+        if self.field_types:
+            for field, field_type in self.field_types.items():
+                if field in service_rawfields:
+                    service_rawfields[field] = field_type(service_rawfields[field])
+
         # Select means: Entry belongs to us; empty select = select everything.
         if self.select_rules and not FieldRule.match_rules(service_rawfields, self.select_rules):
             return False
@@ -308,7 +356,7 @@ class LogService:
             log_entry (LogEntry): Log entry.
 
         Returns:
-            dict
+            dict: New field values; empty if there are no rewrite expressions.
         """
         newfields = {}
 
@@ -376,8 +424,10 @@ class LogService:
         if self.capture_fields and self.ignore_fields:
             self.log_warning("Both 'capture_fields' and 'ignore_fields' are set; only 'capture_fields' will be used.")
 
-        # Reference rewrite_fields to validate and compile them
+        # Reference cached_properties to validate and compile them
         if self.rewrite_fields:
+            pass
+        if self.field_types:
             pass
 
         # Check output configurations now, prior to tailing sources
@@ -436,7 +486,7 @@ class LogService:
 
     def print_conf(self) -> None:
         """Print service configuration."""
-        echo(f"Service: {self.source.name}/{self.name}")
+        echo(f"Service: {self.fullname}")
         echo("=================")
 
         # Using !r uses repr() which quotes strings.
@@ -444,6 +494,16 @@ class LogService:
             if isinstance(v, Path):
                 v = str(v)  # noqa: PLW2901
             echo(f"{k}: {v!r}")
+
+    def print_field_types(self) -> None:
+        """Print service field type conversions."""
+        if self.field_types:
+            echo(f"Service: {self.fullname}")
+            echo("=================")
+
+            # Using !r uses repr() which quotes strings.
+            for k, v in sorted(self.field_types.items()):
+                echo(f"{k}: {v.__name__!r}")
 
     def log_debug(self, message: str) -> None:
         """Log a debug message related to this service.

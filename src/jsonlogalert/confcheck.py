@@ -98,6 +98,7 @@ SERVICE_CONF_DEFAULTS = COMMAND_OPTS_DEFAULTS | {
     "description": None,
     "drop_rules_path": None,
     "enabled": True,
+    "field_types": None,
     "ignore_fields": None,
     "output_content_type": None,
     "output_template_minify_html": False,

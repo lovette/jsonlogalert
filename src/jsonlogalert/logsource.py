@@ -197,7 +197,7 @@ class LogSource:
         source_conf_check(self)
 
         # Merge configs in order of precedence (before services are loaded!)
-        self.source_config = SOURCE_CONF_DEFAULTS | default_config | self.source_config | cli_config
+        self.source_config = dict(sorted((SOURCE_CONF_DEFAULTS | default_config | self.source_config | cli_config).items()))
 
         # Delete settings that do not pertain to sources and don't need to show up in print_conf()
         source_conf_clean(self)
@@ -503,7 +503,11 @@ class LogSource:
 
         # Using !r uses repr() which quotes strings.
         for k, v in sorted(self.field_converters.items()):
-            echo(f"{k}: {v.__name__}")
+            echo(f"{k}: {v.__name__!r}")
+
+        for log_service in self.services:
+            echo("")
+            log_service.print_field_types()
 
     def log_debug(self, message: str) -> None:
         """Log a debug message related to this source.

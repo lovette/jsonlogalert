@@ -180,6 +180,7 @@ Specific sources can be enabled with the `--source` command line option and the 
 | ignore_fields               | list   | Set of fields to not capture, all others are available to templates; merged with service directive. [default: none] |
 | conceal_fields              | list   | Set of fields to "conceal" from templates when iterating fields; merged with service directive; always includes 'timestamp_field' and 'message_field' fields. [default: none] |
 | rewrite_fields              | list   | Set of regular expressions to create new fields with RE named groups. [default: none] |
+| field_types                 | list   | Define the type conversion for a field; applied after 'rewrite_fields'. [choices: int, bool] [default: none] |
 | select_rules_path           | string | Path to select rules. [default: select.yaml] |
 | pass_rules_path             | string | Path to pass rules. [default: pass.yaml] |
 | drop_rules_path             | string | Path to drop rules. [default: drop.yaml] |
