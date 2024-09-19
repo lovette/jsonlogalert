@@ -496,6 +496,15 @@ class LogSource:
             echo("")
             log_service.print_conf()
 
+    def print_field_types(self) -> None:
+        """Print source field types."""
+        echo(f"Source: {self.name}")
+        echo("=================")
+
+        # Using !r uses repr() which quotes strings.
+        for k, v in sorted(self.field_converters.items()):
+            echo(f"{k}: {v.__name__}")
+
     def log_debug(self, message: str) -> None:
         """Log a debug message related to this source.
 

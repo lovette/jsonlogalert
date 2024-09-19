@@ -71,17 +71,18 @@ There are two sets of command line options. The options below control main opera
 for a lot of the configuration directives that apply to [sources](#sources) and [services](#services).
 Options specified on the command line override those in configuration files.
 
-| Option            | Description |
-| ------            | ----------- |
-| -c, --config-file | Read options from configuration FILE. [default: /etc/jsonlogalert.conf] |
-| -d, --config-dir  | Set path to directory containing source and service definitions.  [default: /etc/jsonlogalert.d] |
-| --print-rules     | Print rules and exit. |
-| --print-conf      | Print source and service configurations and exit. |
-| --dry-run         | Run without using or updating tail offset/cursor; suppress output with `--output-devnull` |
-| --tail-reset      | Delete offset/cursor state files and exit. |
-| -v, --verbose     | Be more verbose; can specify more than once. [warnings:`-v`, info:`-vv`, debug:`-vvv`] |
-| --version         | Show the version and exit. |
-| --help            | Show usage and exit. |
+| Option              | Description |
+| ------              | ----------- |
+| -c, --config-file   | Read options from configuration FILE. [default: /etc/jsonlogalert.conf] |
+| -d, --config-dir    | Set path to directory containing source and service definitions.  [default: /etc/jsonlogalert.d] |
+| --print-conf        | Print source and service configurations and exit. |
+| --print-field-types | Print source field types and exit. |
+| --print-rules       | Print rules and exit. |
+| --dry-run           | Run without using or updating tail offset/cursor; suppress output with `--output-devnull` |
+| --tail-reset        | Delete offset/cursor state files and exit. |
+| -v, --verbose       | Be more verbose; can specify more than once. [warnings:`-v`, info:`-vv`, debug:`-vvv`] |
+| --version           | Show the version and exit. |
+| --help              | Show usage and exit. |
 
 A complete listing of command line options is shown with `--help`.
 

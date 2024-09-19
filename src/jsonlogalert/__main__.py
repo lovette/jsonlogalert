@@ -464,6 +464,13 @@ def _override_output_opts(cli_config: dict) -> None:
     default=False,
     help="Print source and service configurations and exit.",
 )
+@optgroup.option(
+    "--print-field-types",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Print source field types and exit.",
+)
 @click.argument(
     "log_file_streams",
     type=click.File("r"),
@@ -496,6 +503,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     output_stdout: bool,  ## noqa: ARG001
     output_template_file: str,  ## noqa: ARG001
     print_conf: bool,
+    print_field_types: bool,
     print_rules: bool,
     services: tuple[str],  ## noqa: ARG001
     sources: tuple[str],  ## noqa: ARG001
@@ -580,6 +588,16 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
             if i:
                 click.echo("")
             log_source.print_conf()
+
+        sys.exit(0)
+
+    if print_field_types:
+        click.echo("All fields are strings unless noted below:")
+
+        for log_source in log_sources:
+            if log_source.field_converters:
+                click.echo("")
+                log_source.print_field_types()
 
         sys.exit(0)
 

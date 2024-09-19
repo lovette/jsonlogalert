@@ -36,6 +36,7 @@ MAIN_OPTS_DIRECTIVES = {
     "config_dir",
     "log_file_streams",
     "print_conf",
+    "print_field_types",
     "print_rules",
     "verbose",
 }
