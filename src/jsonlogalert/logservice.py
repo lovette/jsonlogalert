@@ -400,7 +400,8 @@ class LogService:
             outputs.append(LogAlertOutputToDevNull(self))
         else:
             if ns.output_smtp_rcpt and not ns.output_smtp:
-                logging.info(f"SMTP is disabled; mail will not be sent to '{ns.output_smtp_rcpt}'")
+                if not self.source.is_replica:
+                    self.log_info(f"SMTP is disabled; mail will not be sent to '{ns.output_smtp_rcpt}'")
                 ns.output_smtp_rcpt = None
 
             if ns.output_file_dir or ns.output_file_name:

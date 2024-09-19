@@ -177,6 +177,15 @@ class LogSource:
         """
         return bool(self.source_config.get("onelog", False))
 
+    @property
+    def is_replica(self) -> bool:
+        """Return True if this source is a deaggregation replica.
+
+        Returns:
+            bool
+        """
+        return self.replica_index is not None
+
     def load_conf(self, cli_config: dict[str, Any], default_config: dict[str, Any]) -> None:
         """Apply source configuration and load service configurations.
 
