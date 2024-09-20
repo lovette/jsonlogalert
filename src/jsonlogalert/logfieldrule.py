@@ -3,14 +3,8 @@ from __future__ import annotations
 import operator
 import re
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
-from click import echo
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from jsonlogalert.logservice import LogService
+from click import ClickException, echo
 
 _RULE_OPERATORS = {
     "=": operator.eq,
@@ -26,6 +20,15 @@ _RULE_OPERATORS = {
 
 # Two-character operators must go first (so if a rule begins with `!=` it's not confused with `!`)
 _RULE_OPERATORS = {key: _RULE_OPERATORS[key] for key in sorted(_RULE_OPERATORS.keys(), key=len, reverse=True)}
+
+
+######################################################################
+# FieldRuleError
+
+
+class FieldRuleError(ClickException):
+    """Illegal field rule exception."""
+
 
 ######################################################################
 # FieldRule
@@ -77,16 +80,13 @@ class FieldRule:
         """Build rules for a configuration.
 
         Args:
-            service (LogService): Log service rules are for.
-            rules_path (Path): Path of rules file.
             rules_config (list): Blocks of field rules.
 
         Returns:
             tuple[dict[str, FieldRule]]
         """
-
-        def _rule_warning(message: str) -> None:
-            service.log_warning(f"'{rules_path.name}': {message}")
+        if not rules_config:
+            return None
 
         def _build_field_rules(rule_op: str, rule_values: list) -> FieldRule:
             """Build rule for an individual field."""
@@ -134,20 +134,21 @@ class FieldRule:
                             rule_op_value = rule_op_value.removeprefix(op)
                             break
                     rule_op_value = [rule_op_value]
-                elif isinstance(rule_op_value, (int, bool)):
-                    rule_op_value = [rule_op_value]
                 else:
-                    _rule_warning(f"'{rule_field}': '{rule_op_value}': Unexpected type: {type(rule_op_value).__name__} ")
-                    rule_op_value = [str(rule_op_value)]
+                    rule_op_value = [rule_op_value]
 
                 if not rule_op:
                     rule_op = "="
 
-                field_fns[rule_field] = _build_field_rules(rule_op, rule_op_value)
+                try:
+                    field_fns[rule_field] = _build_field_rules(rule_op, rule_op_value)
+                except FieldRuleError as err:
+                    raise FieldRuleError(f"{rule_field}: {err}") from err
 
             return field_fns
 
-        assert isinstance(rules_config, list)
+        if not isinstance(rules_config, list):
+            rules_config = [rules_config]
 
         rules_list: list[dict] = [_build_block_rules(field_block) for field_block in rules_config]
 

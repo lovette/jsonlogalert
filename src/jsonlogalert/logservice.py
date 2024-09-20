@@ -21,7 +21,7 @@ from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError
 from jsonlogalert.logalertoutput import LogAlertOutput, LogAlertOutputToDevNull, LogAlertOutputToStdout
 from jsonlogalert.logalertoutput_file import LogAlertOutputToFile
 from jsonlogalert.logalertoutput_smtp import LogAlertOutputToSMTP
-from jsonlogalert.logfieldrule import FieldRule
+from jsonlogalert.logfieldrule import FieldRule, FieldRuleError
 from jsonlogalert.utils import read_config_file, resolve_rel_path
 
 ######################################################################
@@ -394,16 +394,12 @@ class LogService:
         except LogAlertConfigError as err:
             self.config_error(f"Failed to read rules file '{rules_config_path.name}'", err)
 
-        if not rules_config:
-            return None
+        try:
+            service_rules = FieldRule.build_rules(rules_config)
+        except FieldRuleError as err:
+            self.config_error(f"'{rules_config_path.name}': {err}")
 
-        if isinstance(rules_config, dict):
-            rules_config = [rules_config]
-
-        if not isinstance(rules_config, list):
-            self.config_error(f"Invalid rules configuration: {rules_config_path.name}: rules must be key/value pairs")
-
-        return FieldRule.build_rules(self, rules_config_path, rules_config)
+        return service_rules
 
     def reset(self, log_source: LogSource) -> None:
         """Reset service internals to prepare for another source log iteration."""
