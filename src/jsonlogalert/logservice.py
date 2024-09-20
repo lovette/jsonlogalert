@@ -90,7 +90,7 @@ class LogService:
             str
         """
         # Default name is the directory without the "digit prefix" used for sorting
-        return self.service_config.get("name", re.sub(r"^\d+-", "", self.service_confdir_path.name))
+        return re.sub(r"^\d+-", "", self.service_confdir_path.name)
 
     @property  # Cannot be a cached_property because name changes after deaggregate()
     def fullname(self) -> str:
