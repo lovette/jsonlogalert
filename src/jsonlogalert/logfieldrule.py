@@ -90,6 +90,27 @@ class FieldRule:
             if not isinstance(v, assert_type):
                 raise FieldRuleError(f"'{v}': Unexpected value type {type(v).__name__}; expected {assert_type.__name__}")
 
+    @staticmethod
+    def cast_values_scalar(rule_values: list) -> None:
+        """Cast values to an int or float.
+
+        Args:
+            rule_values (list): List of values.
+
+        Raises:
+            FieldRuleError
+        """
+        for i, v in enumerate(rule_values):
+            if not isinstance(v, (int, float)):
+                try:
+                    v_scalar = float(v) if "." in v else int(v)
+                except ValueError as err:
+                    raise FieldRuleError(f"'{v}': Unexpected value type {type(v).__name__}; cannot cast to scalar value") from err
+                else:
+                    rule_values[i] = v_scalar
+
+    @staticmethod
+    def build_rules(rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901
         """Build rules for a configuration.
 
         Args:
@@ -111,6 +132,7 @@ class FieldRule:
             if first_value == "*":
                 field_rule = FieldRuleHasField(rule_op)
             elif rule_op[0] in (">", "<"):
+                FieldRule.cast_values_scalar(rule_values)
                 field_rule = FieldRuleOperator(rule_op, rule_values)
             elif rule_op.endswith("~"):
                 rule_cls = FieldRuleRegex if single_value else FieldRuleRegexList
