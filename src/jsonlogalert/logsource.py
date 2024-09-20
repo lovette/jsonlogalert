@@ -506,8 +506,9 @@ class LogSource:
             echo(f"{k}: {v.__name__!r}")
 
         for log_service in self.services:
-            echo("")
-            log_service.print_field_types()
+            if log_service.field_types:
+                echo("")
+                log_service.print_field_types()
 
     def log_debug(self, message: str) -> None:
         """Log a debug message related to this source.
