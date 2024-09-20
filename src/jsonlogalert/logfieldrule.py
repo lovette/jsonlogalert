@@ -64,7 +64,7 @@ class FieldRule:
         """
         class_name = type(self).__name__
         negate = "!" if self.rule_negate else ""
-        return f"{class_name}({negate}{self.rule_op}{self.rule_value})"
+        return f"{class_name}({negate}{self.rule_op}{self.rule_value!r})"
 
     def __str__(self) -> str:
         """Return string representation of an object used in print().
@@ -73,7 +73,7 @@ class FieldRule:
             str
         """
         negate = "!" if self.rule_negate else ""
-        return f"{negate}{self.rule_op}{self.rule_value}"
+        return f"{negate}{self.rule_op}{self.rule_value!r}"
 
     @staticmethod
     def assert_values_type(rule_values: list, assert_type: type) -> None:
