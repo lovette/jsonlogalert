@@ -76,7 +76,20 @@ class FieldRule:
         return f"{negate}{self.rule_op}{self.rule_value}"
 
     @staticmethod
-    def build_rules(service: LogService, rules_path: Path, rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901
+    def assert_values_type(rule_values: list, assert_type: type) -> None:
+        """Raise exception if values are not of given type.
+
+        Args:
+            rule_values (list): List of values.
+            assert_type (type): Type to assert.
+
+        Raises:
+            FieldRuleError
+        """
+        for v in rule_values:
+            if not isinstance(v, assert_type):
+                raise FieldRuleError(f"'{v}': Unexpected value type {type(v).__name__}; expected {assert_type.__name__}")
+
         """Build rules for a configuration.
 
         Args:
@@ -284,7 +297,11 @@ class FieldRuleRegexList(FieldRule):
         """
         super().__init__(rule_op, rule_values)
 
-        self.rule_re = tuple(re.compile(v) for v in rule_values)
+        try:
+            self.rule_re = tuple(re.compile(v) for v in rule_values)
+        except TypeError as err:
+            FieldRule.assert_values_type(rule_values, str)
+            raise FieldRuleError(f"{err}") from err
 
     def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
         """Evaluate rule.
