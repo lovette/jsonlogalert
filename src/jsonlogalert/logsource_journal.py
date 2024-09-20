@@ -93,9 +93,8 @@ class LogSourceSystemdJournal(LogSource):
         """
         self.log_debug(f"Tailing systemd-journal: {self.journal_dir or 'default'}")
 
-        # Use but do not update tail offset
-        tail_test_mode = self.tail_debug
-
+        tail_ignore = self.tail_ignore or self.tail_journal_since
+        tail_dryrun = self.tail_dryrun or tail_ignore
         tail_cursor_path = self.get_tail_state_path(self.journal_dir or "systemd-journal")
 
         exec_args = [str(self.tail_journal_bin)]
@@ -103,8 +102,13 @@ class LogSourceSystemdJournal(LogSource):
         # Be explicit that we want *all* data.
         exec_args.append("-a")
 
-        if self.tail_journal_since:
-            if self.tail_journal_since == "boot":
+        if tail_ignore:
+            self.log_debug("Tail cursor state file is ignored")
+
+            if not self.tail_journal_since or self.tail_journal_since == "today":
+                self.log_debug("Tail will start with today's events")
+                exec_args.extend(("-r",))
+            elif self.tail_journal_since == "boot":
                 self.log_debug("Tail will start at the current boot")
                 exec_args.extend(("-b",))
             elif self.tail_journal_since == "all":
@@ -112,20 +116,14 @@ class LogSourceSystemdJournal(LogSource):
                 exec_args.extend(("-A",))
             else:
                 self.log_error(f"'{self.tail_journal_since}' is not a valid '--tail-journal-since' option")
-
-        elif not self.tail_ignore:
+        else:
             if tail_cursor_path.is_file():
                 self.log_debug(f"Tail will continue from previous cursor: {tail_cursor_path}")
             else:
                 self.log_debug("Tail will start with today's events")
-
-        if self.tail_ignore:
-            self.log_debug("Tail cursor state file is ignored")
-            tail_test_mode = True
-        else:
             exec_args.extend(("-o", str(tail_cursor_path)))
 
-        if tail_test_mode:
+        if tail_dryrun:
             self.log_debug("Tail cursor state file will not be updated")
             exec_args.extend(("-t",))
 

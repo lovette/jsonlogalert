@@ -107,15 +107,15 @@ Options specified on the command line override those in configuration files.
 | Directive      | Command line     | Description |
 | ---------      | ------------     | ----------- |
 | tail_state_dir | --tail-state-dir | Set path of DIRECTORY to save tail offset/cursor state. [default: /var/lib/misc] |
-| tail_debug     | --tail-debug     | Use but not update tail offset/cursor. |
-| tail_ignore    | --tail-ignore    | Ignore and do not update tail offset/cursor. |
+| tail_dryrun    | --tail-dryrun    | Use but not update tail offset/cursor. |
+| tail_ignore    | --tail-ignore    | Ignore and do not update tail offset/cursor; implies `--tail-journal-since today`. |
 
 ### Journal options
 
 | Directive          | Command line          | Description |
 | ---------          | ------------          | ----------- |
 | tail_journal_bin   | --tail-journal-bin    | Set path of executable to tail systemd journal. [default: logtail-journal] |
-| tail_journal_since | --tail-journal-since  | Read all systemd journal entries or since last boot (ignores cursor.) [choices: boot, all] |
+| tail_journal_since | --tail-journal-since  | Ignore and do not update tail offset/cursor and read all systemd journal entries, since last boot or today's events; [choices: today, boot, all] |
 
 ### Log file options
 

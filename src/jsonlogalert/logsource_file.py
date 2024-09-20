@@ -82,13 +82,9 @@ class LogSourceTextFile(LogSource):
         """
         self.log_debug(f"Tailing {log_file_path}")
 
-        # Use but do not update tail offset
-        tail_test_mode = self.tail_debug
+        tail_dryrun = self.tail_dryrun or self.tail_ignore
 
         log_offset_path = self.get_tail_state_path(log_file_path)
-
-        if log_offset_path.is_file():
-            self.log_debug(f"Tail will continue from previous offset: {log_offset_path}")
 
         # Note: If neither -t or -o is specified, logtail2 will (attempt) create
         # an offset file in the log file directory.
@@ -97,11 +93,12 @@ class LogSourceTextFile(LogSource):
 
         if self.tail_ignore:
             self.log_debug("Tail offset state is ignored; reading whole file")
-            tail_test_mode = True
         else:
+            if log_offset_path.is_file():
+                self.log_debug(f"Tail will continue from previous offset: {log_offset_path}")
             exec_args.extend(("-o", str(log_offset_path)))
 
-        if tail_test_mode:
+        if tail_dryrun:
             self.log_debug("Tail offset state file will not be updated")
             exec_args.extend(("-t",))
 

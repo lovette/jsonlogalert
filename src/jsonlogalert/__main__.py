@@ -235,7 +235,7 @@ def _override_output_opts(cli_config: dict) -> None:
 )
 @optgroup.option(
     "--tail-journal-since",
-    type=click.Choice(("boot", "all"), case_sensitive=False),
+    type=click.Choice(("today", "boot", "all"), case_sensitive=False),
     default=None,
     help="Read all systemd journal entries or since last boot (ignores cursor.)",
 )
@@ -286,7 +286,7 @@ def _override_output_opts(cli_config: dict) -> None:
     help="Delete offset/cursor state files and exit.",
 )
 @optgroup.option(
-    "--tail-debug",
+    "--tail-dryrun",
     type=bool,
     is_flag=True,
     default=False,
@@ -507,7 +507,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     print_rules: bool,
     services: tuple[str],  ## noqa: ARG001
     sources: tuple[str],  ## noqa: ARG001
-    tail_debug: bool,  ## noqa: ARG001
+    tail_dryrun: bool,  ## noqa: ARG001
     tail_file_bin: Path,  ## noqa: ARG001
     tail_file_paths: tuple[Path],
     tail_ignore: bool,  ## noqa: ARG001
@@ -548,9 +548,8 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
         sys.exit(0)
 
     if dry_run:
-        cli_config["tail_debug"] = True
+        cli_config["tail_dryrun"] = True
         cli_config["tail_ignore"] = True
-        cli_config["tail_journal_since"] = "boot"
 
     # Command line overrides source/service output configurations
     _override_output_opts(cli_config)

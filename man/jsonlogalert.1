@@ -1,4 +1,4 @@
-.TH "JSONLOGALERT" "1" "2024-09-19" "0.2.0.dev0" "jsonlogalert Manual"
+.TH "JSONLOGALERT" "1" "2024-09-20" "0.2.0.dev0" "jsonlogalert Manual"
 .SH NAME
 jsonlogalert \- Read JSON structured logs and filter...
 .SH SYNOPSIS
@@ -40,7 +40,7 @@ Tail systemd journal DIRECTORY.
 \fB\-\-tail\-journal\-bin\fP PATH
 Set path of executable to tail systemd journal.  [default: logtail-journal]
 .TP
-\fB\-\-tail\-journal\-since\fP [boot|all]
+\fB\-\-tail\-journal\-since\fP [today|boot|all]
 Read all systemd journal entries or since last boot (ignores cursor.)
 .TP
 \fB\-f,\fP \-\-tail\-file LOGFILE
@@ -55,7 +55,7 @@ Set path of DIRECTORY to save tail offset/cursor state.  [default: /var/lib/misc
 \fB\-\-tail\-reset\fP
 Delete offset/cursor state files and exit.
 .TP
-\fB\-\-tail\-debug\fP
+\fB\-\-tail\-dryrun\fP
 Use but do not update tail offset/cursor.
 .TP
 \fB\-\-tail\-ignore\fP

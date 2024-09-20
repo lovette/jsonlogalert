@@ -69,7 +69,7 @@ COMMAND_OPTS_DEFAULTS = {
     "output_template_file": None,
     "services": (),
     "sources": (),
-    "tail_debug": False,
+    "tail_dryrun": False,
     "tail_file_bin": "logtail2",
     "tail_file_paths": (),
     "tail_ignore": False,
