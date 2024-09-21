@@ -133,7 +133,7 @@ class FieldRule:
             single_value = len(rule_values) == 1
 
             if rule_op.endswith("*"):
-                field_rule = FieldRuleHasField(rule_op)
+                field_rule = FieldRuleHasField(rule_op, rule_values)
             elif rule_op[0] in (">", "<"):
                 FieldRule.cast_values_scalar(rule_values)
                 field_rule = FieldRuleOperator(rule_op, rule_values)
@@ -149,7 +149,7 @@ class FieldRule:
 
             return field_rule
 
-        def _build_block_rules(field_block: dict) -> dict[str, FieldRule]:  # noqa: C901
+        def _build_block_rules(field_block: dict) -> dict[str, FieldRule]:
             """Build ruleset for an individual block of field rules."""
             assert isinstance(field_block, dict)
 
@@ -161,20 +161,17 @@ class FieldRule:
                 rule_op_value = rule_value
 
                 if isinstance(rule_op_value, list):
-                    if len(rule_op_value) > 1:
-                        # First item can be an operator
-                        for op in FieldRule.RULE_OPERATORS:
-                            if rule_op_value[0] == op:
-                                rule_op = op
-                                rule_op_value.pop(0)
-                                break
+                    if rule_op_value[0] in FieldRule.RULE_OPERATORS:
+                        # First item is an operator
+                        rule_op = rule_op_value[0]
+                        rule_op_value.pop(0)
                 elif isinstance(rule_op_value, str):
                     for op in FieldRule.RULE_OPERATORS:
                         if rule_op_value.startswith(op):
                             rule_op = op
-                            rule_op_value = rule_op_value.removeprefix(op)
+                            rule_op_value = rule_op_value.removeprefix(op) or None
                             break
-                    rule_op_value = [rule_op_value]
+                    rule_op_value = [] if rule_op_value is None else [rule_op_value]
                 else:
                     rule_op_value = [rule_op_value]
 
@@ -274,6 +271,11 @@ class FieldRuleOperatorList(FieldRule):
         self.rule_fn = self.RULE_OPERATORS[self.rule_op]
         assert self.rule_fn is not None
 
+        if not self.rule_value:
+            raise FieldRuleError(f"operator '{self.rule_op}' requires a value.")
+        if self.rule_value[0] is None or self.rule_value[0] == "":
+            raise FieldRuleError(f"operator '{self.rule_op}' requires a non-empty value.")
+
     def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
         """Evaluate rule.
 
@@ -336,6 +338,11 @@ class FieldRuleRegexMatchList(FieldRule):
         except TypeError as err:
             FieldRule.assert_values_type(rule_values, str)
             raise FieldRuleError(f"{err}") from err
+
+        if not self.rule_value:
+            raise FieldRuleError(f"operator '{self.rule_op}' requires a value.")
+        if not self.rule_value[0]:
+            raise FieldRuleError(f"operator '{self.rule_op}' requires a non-empty value.")
 
     def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
         """Evaluate rule.
@@ -456,13 +463,17 @@ class FieldRuleRegexSearch(FieldRuleRegexMatch):
 class FieldRuleHasField(FieldRule):
     """Field rule that evaluates whether a log entry defines a value for a field."""
 
-    def __init__(self, rule_op: str) -> None:
+    def __init__(self, rule_op: str, rule_values: Sequence) -> None:
         """Constructor.
 
         Args:
             rule_op (str): Rule operator.
+            rule_values (Sequence): List of values; only the first is used.
         """
-        super().__init__(rule_op)
+        super().__init__(rule_op, rule_values)
+
+        if self.rule_value:
+            raise FieldRuleError(f"operator '{self.rule_op}' does not require a value.")
 
     def __repr__(self) -> str:
         """String representation of object.
