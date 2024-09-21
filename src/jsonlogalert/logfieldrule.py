@@ -284,10 +284,11 @@ class FieldRuleOperatorList(FieldRule):
         """
         found_match = False
 
-        for v in self.rule_value:
-            if self.rule_fn(args[0], v):
-                found_match = True
-                break
+        try:
+            found_match = any(self.rule_fn(args[0], v) for v in self.rule_value)
+        except TypeError as err:
+            # Something like: TypeError("'<' not supported between instances of 'str' and 'int'")
+            raise FieldRuleError(f"'{args[0]}': {err}") from err
 
         return not found_match if self.rule_negate else found_match
 
@@ -312,7 +313,11 @@ class FieldRuleOperator(FieldRuleOperatorList):
         Returns:
             bool: True if rule matches.
         """
-        found_match = self.rule_fn(args[0], self.rule_value)
+        try:
+            found_match = self.rule_fn(args[0], self.rule_value)
+        except TypeError as err:
+            # Something like: TypeError("'<' not supported between instances of 'str' and 'int'")
+            raise FieldRuleError(f"'{args[0]}': {err}") from err
 
         return not found_match if self.rule_negate else found_match
 
