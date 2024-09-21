@@ -499,10 +499,21 @@ class LogService:
         Args:
             output (LogAlertOutput): Output target.
         """
+        status_parts = [f"claimed:{len(self.logentries)}"]
+
+        if self.pass_count:
+            status_parts.append(f"passed:{self.pass_count}")
+        if self.drop_count:
+            status_parts.append(f"dropped:{self.drop_count}")
+        if self.rule_fail_count:
+            status_parts.append(f"rulefail:{self.rule_fail_count}")
         if self.discard_count:
-            self.log_warning(f"claimed:{len(self.logentries)} passed:{self.pass_count} dropped:{self.drop_count}; discarded:{self.discard_count}")
+            status_parts.append(f"discarded:{self.discard_count}")
+
+        if self.rule_fail_count or self.discard_count:
+            self.log_warning(" ".join(status_parts))
         else:
-            self.log_info(f"claimed:{len(self.logentries)} passed:{self.pass_count} dropped:{self.drop_count}")
+            self.log_info(" ".join(status_parts))
 
         if self.has_entries:
             # We create outputs for each output() so memory is released between services
