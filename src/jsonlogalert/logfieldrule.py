@@ -7,6 +7,8 @@ from collections.abc import Sequence
 from click import ClickException, echo
 
 _RULE_OPERATORS = {
+    "*": None,
+    "!*": None,
     "=": operator.eq,
     "!": operator.ne,
     "!=": operator.ne,
@@ -112,7 +114,7 @@ class FieldRule:
                     rule_values[i] = v_scalar
 
     @staticmethod
-    def build_rules(rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901, PLR0915
+    def build_rules(rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901
         """Build rules for a configuration.
 
         Args:
@@ -128,10 +130,9 @@ class FieldRule:
             """Build rule for an individual field."""
             assert isinstance(rule_values, Sequence)
 
-            first_value = rule_values[0]
             single_value = len(rule_values) == 1
 
-            if first_value == "*":
+            if rule_op.endswith("*"):
                 field_rule = FieldRuleHasField(rule_op)
             elif rule_op[0] in (">", "<"):
                 FieldRule.cast_values_scalar(rule_values)
@@ -471,6 +472,14 @@ class FieldRuleHasField(FieldRule):
         """
         class_name = type(self).__name__
         return f"{class_name}({self.rule_negate is False})"
+
+    def __str__(self) -> str:
+        """Return string representation of an object used in print().
+
+        Returns:
+            str
+        """
+        return "does not have a value" if self.rule_negate else "has a value"
 
     def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
         """Evaluate rule.

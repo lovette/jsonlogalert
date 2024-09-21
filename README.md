@@ -307,15 +307,16 @@ JSON:
 
 | Operator | Comparison |
 | -------- | ---------- |
-| =        | Equals |
+| =        | Equals (default) |
 | >        | Greater than (scalar value) |
 | >=       | Greater than or equal (scalar value) |
 | <        | Less than (scalar value) |
 | <=       | Less than or equal (scalar value) |
 | ^        | Regular expression match from beginning of string |
 | ~        | Regular expression search |
+| *        | Field is set (to any value) |
 
-Prefix with `!` to negate an equality or regular expression match.
+Prefix with `!` to negate an equality, regular expression, or field is set operator.
 
 ### Testing rules
 
