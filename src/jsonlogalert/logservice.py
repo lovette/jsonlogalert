@@ -69,6 +69,8 @@ class LogService:
         Returns:
             Optional[Any]: Field value
         """
+        if not self.service_config:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'; 'service_config' is not set")
         if key in self.service_config:
             return self.service_config.get(key)
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'")
