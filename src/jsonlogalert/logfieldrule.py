@@ -199,17 +199,23 @@ class FieldRule:
 
         Returns:
             bool: True if all the rules for *any* field block are True.
+
+        Raises:
+            FieldRuleError
         """
 
         def _match_block_rules(fields: dict, block_rules: dict[str, FieldRule]) -> bool:
             """Return True if the rules for *all* fields are True."""
             assert isinstance(block_rules, dict)
 
-            for field_name, field_rule in block_rules.items():
-                field_value = fields.get(field_name)
-                if not field_rule(field_value):
-                    # All fields in the block must match
-                    return False
+            try:
+                for field_name, field_rule in block_rules.items():
+                    field_value = fields.get(field_name)
+                    if not field_rule(field_value):
+                        # All fields in the block must match
+                        return False
+            except FieldRuleError as err:
+                raise FieldRuleError(f"{field_name}: {err}") from err
 
             return True
 
@@ -330,13 +336,19 @@ class FieldRuleRegexList(FieldRule):
 
         Returns:
             bool: True if rule matches.
+
+        Raises:
+            FieldRuleError
         """
         found_match = False
 
-        for r in self.rule_re:
-            if r.match(str(args[0])):
-                found_match = True
-                break
+        if args[0] is not None:
+            try:
+                found_match = any(r.match(args[0]) for r in self.rule_re)
+            except TypeError as err:
+                if not isinstance(args[0], str):
+                    raise FieldRuleError(f"'{args[0]}': Unexpected value type {type(args[0]).__name__}; regular expression requires str") from err
+                raise FieldRuleError(f"'{args[0]}': {err}") from err
 
         return not found_match if self.rule_negate else found_match
 
@@ -360,8 +372,19 @@ class FieldRuleRegex(FieldRuleRegexList):
 
         Returns:
             bool: True if rule matches.
+
+        Raises:
+            FieldRuleError
         """
-        found_match = self.rule_re.match(str(args[0]))
+        found_match = False
+
+        if args[0] is not None:
+            try:
+                found_match = self.rule_re.match(args[0])
+            except TypeError as err:
+                if not isinstance(args[0], str):
+                    raise FieldRuleError(f"'{args[0]}': Unexpected value type {type(args[0]).__name__}; regular expression requires str") from err
+                raise FieldRuleError(f"'{args[0]}': {err}") from err
 
         return not found_match if self.rule_negate else found_match
 

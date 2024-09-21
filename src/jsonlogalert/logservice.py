@@ -24,6 +24,8 @@ from jsonlogalert.logalertoutput_smtp import LogAlertOutputToSMTP
 from jsonlogalert.logfieldrule import FieldRule, FieldRuleError
 from jsonlogalert.utils import read_config_file, resolve_rel_path
 
+MAX_RULE_FAIL_MSGS = 10
+
 ######################################################################
 # LogService
 
@@ -49,6 +51,7 @@ class LogService:
         self.discard_count = 0
         self.pass_count = 0
         self.drop_count = 0
+        self.rule_fail_count = 0
         self.logentries: List[LogEntry] = None
 
     def __repr__(self) -> str:
@@ -320,16 +323,16 @@ class LogService:
                     service_rawfields[field] = field_type(service_rawfields[field])
 
         # Select means: Entry belongs to us; empty select = select everything.
-        if self.select_rules and not FieldRule.match_rules(service_rawfields, self.select_rules):
+        if self.select_rules and not self._match_rules(service_rawfields, self.select_rules):
             return False
 
         # Pass means: Entry belongs to us but let someone else deal with it.
-        if self.pass_rules and FieldRule.match_rules(service_rawfields, self.pass_rules):
+        if self.pass_rules and self._match_rules(service_rawfields, self.pass_rules):
             self.pass_count += 1
             return False
 
         # Drop means: Entry belongs to us but we don't care about it.
-        if self.drop_rules and FieldRule.match_rules(service_rawfields, self.drop_rules):
+        if self.drop_rules and self._match_rules(service_rawfields, self.drop_rules):
             self.drop_count += 1
             return True
 
@@ -350,6 +353,29 @@ class LogService:
             self.discard_count += 1
 
         return True
+
+    def _match_rules(self, fields: dict, block_rules_list: list[dict[str, FieldRule]]) -> bool:
+        """Evaluates list of rule blocks against log entry fields.
+
+        Args:
+            fields (dict): Log entry fields.
+            block_rules_list (list[dict[str, FieldRule]]): List of field blocks rules.
+
+        Returns:
+            bool: True if all the rules for *any* field block are True.
+        """
+        match_found = False
+
+        try:
+            match_found = FieldRule.match_rules(fields, block_rules_list)
+        except FieldRuleError as err:
+            if self.rule_fail_count <= MAX_RULE_FAIL_MSGS:
+                self.log_warning(f"{err}")
+                if self.rule_fail_count == MAX_RULE_FAIL_MSGS:
+                    self.log_warning(f">{MAX_RULE_FAIL_MSGS} warnings; rule failure messages will be suppressed")
+            self.rule_fail_count += 1
+
+        return match_found
 
     def _get_rewrite_fields(self, log_entry: LogEntry) -> dict:
         """Applies 'rewrite_fields' rules to create new log entry fields.
@@ -410,6 +436,7 @@ class LogService:
         self.discard_count = 0
         self.pass_count = 0
         self.drop_count = 0
+        self.rule_fail_count = 0
 
         # Empty (and release memory held by) log entries and prepare for the next source log iteration.
         # https://stackoverflow.com/questions/12417498/how-to-release-used-memory-immediately-in-python-list
