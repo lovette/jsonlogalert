@@ -179,7 +179,7 @@ Specific sources can be enabled with the `--source` command line option and the 
 | capture_fields              | list   | Set of fields to capture and made available to templates; takes precedence over `ignore_fields`; merged with service directive. [default: none] |
 | ignore_fields               | list   | Set of fields to not capture, all others are available to templates; merged with service directive. [default: none] |
 | conceal_fields              | list   | Set of fields to "conceal" from templates when iterating fields; merged with service directive; always includes 'timestamp_field' and 'message_field' fields. [default: none] |
-| rewrite_fields              | list   | Set of regular expressions to create new fields with RE named groups. [default: none] |
+| rewrite_fields              | list   | Set of regular expressions to create new fields from log entry field values using [named groups](https://docs.python.org/3/howto/regex.html#non-capturing-and-named-groups); regular expressions are matched from beginning of the field value; a single field can be rewritten multiple times. [default: none] |
 | field_types                 | list   | Define the type conversion for a field; applied after 'rewrite_fields'. [choices: int, bool] [default: none] |
 | select_rules_path           | string | Path to select rules. [default: select.yaml] |
 | pass_rules_path             | string | Path to pass rules. [default: pass.yaml] |
