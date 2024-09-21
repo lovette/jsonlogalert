@@ -305,16 +305,17 @@ JSON:
 
 ### Rule operators
 
-| Operator | Comparison                   |
-| -------- | ----------                   |
-| =        | Equals                       |
-| !        | Not equal                    |
-| >        | Greater than                 |
-| >=       | Greater than or equal        |
-| <        | Less than                    |
-| <=       | Less than or equal           |
-| ~        | Regular expression match     |
-| !~       | Not regular expression match |
+| Operator | Comparison |
+| -------- | ---------- |
+| =        | Equals |
+| >        | Greater than (scalar value) |
+| >=       | Greater than or equal (scalar value) |
+| <        | Less than (scalar value) |
+| <=       | Less than or equal (scalar value) |
+| ^        | Regular expression match from beginning of string |
+| ~        | Regular expression search |
+
+Prefix with `!` to negate an equality or regular expression match.
 
 ### Testing rules
 

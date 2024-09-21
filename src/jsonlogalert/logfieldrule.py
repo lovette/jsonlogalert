@@ -10,12 +10,14 @@ _RULE_OPERATORS = {
     "=": operator.eq,
     "!": operator.ne,
     "!=": operator.ne,
-    "~": None,
-    "!~": None,
     ">": operator.gt,
     "<": operator.lt,
     ">=": operator.ge,
     "<=": operator.le,
+    "^": None,
+    "!^": None,
+    "~": None,
+    "!~": None,
 }
 
 # Two-character operators must go first (so if a rule begins with `!=` it's not confused with `!`)
@@ -110,7 +112,7 @@ class FieldRule:
                     rule_values[i] = v_scalar
 
     @staticmethod
-    def build_rules(rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901
+    def build_rules(rules_config: list[dict[str, str | float | bool]]) -> tuple[dict[str, FieldRule]] | None:  # noqa: C901, PLR0915
         """Build rules for a configuration.
 
         Args:
@@ -135,7 +137,10 @@ class FieldRule:
                 FieldRule.cast_values_scalar(rule_values)
                 field_rule = FieldRuleOperator(rule_op, rule_values)
             elif rule_op.endswith("~"):
-                rule_cls = FieldRuleRegex if single_value else FieldRuleRegexList
+                rule_cls = FieldRuleRegexSearch if single_value else FieldRuleRegexSearchList
+                field_rule = rule_cls(rule_op, rule_values)
+            elif rule_op.endswith("^"):
+                rule_cls = FieldRuleRegexMatch if single_value else FieldRuleRegexMatchList
                 field_rule = rule_cls(rule_op, rule_values)
             else:
                 rule_cls = FieldRuleOperator if single_value else FieldRuleOperatorList
@@ -310,10 +315,10 @@ class FieldRuleOperator(FieldRuleOperatorList):
 
 
 ######################################################################
-# FieldRuleRegex
+# FieldRuleRegexMatch
 
 
-class FieldRuleRegexList(FieldRule):
+class FieldRuleRegexMatchList(FieldRule):
     """Field rule that evaluates a regular expression against a list of values."""
 
     def __init__(self, rule_op: str, rule_values: Sequence) -> None:
@@ -353,7 +358,7 @@ class FieldRuleRegexList(FieldRule):
         return not found_match if self.rule_negate else found_match
 
 
-class FieldRuleRegex(FieldRuleRegexList):
+class FieldRuleRegexMatch(FieldRuleRegexMatchList):
     """Field rule that evaluates a regular expression against a single value."""
 
     def __init__(self, rule_op: str, rule_values: Sequence) -> None:
@@ -381,6 +386,60 @@ class FieldRuleRegex(FieldRuleRegexList):
         if args[0] is not None:
             try:
                 found_match = self.rule_re.match(args[0])
+            except TypeError as err:
+                if not isinstance(args[0], str):
+                    raise FieldRuleError(f"'{args[0]}': Unexpected value type {type(args[0]).__name__}; regular expression requires str") from err
+                raise FieldRuleError(f"'{args[0]}': {err}") from err
+
+        return not found_match if self.rule_negate else found_match
+
+
+######################################################################
+# FieldRuleRegexSearch
+
+
+class FieldRuleRegexSearchList(FieldRuleRegexMatchList):
+    """Field rule that evaluates a regular expression against a list of values."""
+
+    def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
+        """Evaluate rule.
+
+        Returns:
+            bool: True if rule matches.
+
+        Raises:
+            FieldRuleError
+        """
+        found_match = False
+
+        if args[0] is not None:
+            try:
+                found_match = any(r.search(args[0]) for r in self.rule_re)
+            except TypeError as err:
+                if not isinstance(args[0], str):
+                    raise FieldRuleError(f"'{args[0]}': Unexpected value type {type(args[0]).__name__}; regular expression requires str") from err
+                raise FieldRuleError(f"'{args[0]}': {err}") from err
+
+        return not found_match if self.rule_negate else found_match
+
+
+class FieldRuleRegexSearch(FieldRuleRegexMatch):
+    """Field rule that evaluates a regular expression against a single value."""
+
+    def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
+        """Evaluate rule.
+
+        Returns:
+            bool: True if rule matches.
+
+        Raises:
+            FieldRuleError
+        """
+        found_match = False
+
+        if args[0] is not None:
+            try:
+                found_match = self.rule_re.search(args[0])
             except TypeError as err:
                 if not isinstance(args[0], str):
                     raise FieldRuleError(f"'{args[0]}': Unexpected value type {type(args[0]).__name__}; regular expression requires str") from err
