@@ -316,11 +316,8 @@ class LogService:
         # but don't change 'LogEntry.rawfields' until *after* we claim the entry.
         service_rawfields = (log_entry.rawfields | rewrittenfields) if rewrittenfields else log_entry.rawfields
 
-        # Convert fields to native types (same function as source.field_converters)
-        if self.field_types:
-            for field, field_type in self.field_types.items():
-                if field in service_rawfields:
-                    service_rawfields[field] = field_type(service_rawfields[field])
+        # Apply converters to field values
+        self._apply_field_ops(service_rawfields)
 
         # Select means: Entry belongs to us; empty select = select everything.
         if self.select_rules and not self._match_rules(service_rawfields, self.select_rules):
@@ -353,6 +350,24 @@ class LogService:
             self.discard_count += 1
 
         return True
+
+    def _apply_field_ops(self, rawfields: dict) -> None:
+        """Apply conversion operations to field values.
+
+        Args:
+            rawfields (dict): Log entry fields.
+        """
+        # Some service include newlines in log messages!
+        if self.rstrip_fields:
+            for field in self.rstrip_fields:
+                if field in rawfields and isinstance(rawfields[field], str):
+                    rawfields[field] = rawfields[field].rstrip()
+
+        # Convert fields to native types (same function as source.field_converters)
+        if self.field_types:
+            for field, field_type in self.field_types.items():
+                if field in rawfields:
+                    rawfields[field] = field_type(rawfields[field])
 
     def _match_rules(self, fields: dict, block_rules_list: list[dict[str, FieldRule]]) -> bool:
         """Evaluates list of rule blocks against log entry fields.

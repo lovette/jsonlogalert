@@ -104,6 +104,7 @@ SERVICE_CONF_DEFAULTS = COMMAND_OPTS_DEFAULTS | {
     "output_template_minify_html": False,
     "pass_rules_path": None,
     "rewrite_fields": None,
+    "rstrip_fields": None,
     "select_rules_path": None,
 }
 
