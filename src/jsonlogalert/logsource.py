@@ -339,7 +339,7 @@ class LogSource:
                 self.apply_field_converters(fields, log_line)
                 log_entry = LogEntry(fields, self.timestamp_field, self.message_field)
                 claimed = any(service.claim_entry(log_entry) for service in self.services)
-            except LogAlertParserError as err:
+            except (LogAlertParserError, TypeError, ValueError) as err:
                 if fail_line_count <= MAX_PARSE_STREAM_FAIL_MSGS:
                     self.log_warning(f"Failed to parse log entry (line {line_count}): {err}")
                     if fail_line_count == MAX_PARSE_STREAM_FAIL_MSGS:
