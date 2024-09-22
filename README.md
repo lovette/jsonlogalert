@@ -486,6 +486,24 @@ Templates access details about log entries, their source and service using templ
 | logservice | The service. |
 | logsource  | The source. |
 
+### Template functions
+
+&bull; `logentries_groupby` - Group `logentries` by one or more field values.
+
+	```
+	logentries_groupby(fields: str | Sequence, default_group: str | Sequence | None = None) -> ItemsView[str | tuple[str], list[LogEntry]]
+
+	Args:
+		fields (str | Sequence): Field name or sequence of fields (list or tuple).
+		default_group (str | Sequence | None, optional): Default group value or sequence of values. Defaults to 'fields'.
+
+	Returns:
+		ItemsView: ItemsView[(group, logentries)] where `group` is a field value or tuple of field values.
+
+	Example:
+		{%- for (systemd_unit, syslog_id), group_entries in logentries_groupby(("_SYSTEMD_UNIT", "SYSLOG_IDENTIFIER")) -%}
+	```
+
 #### Log entry properties
 
 Fields for each log entry element in `logentries` are accessed as properties.
