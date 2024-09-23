@@ -162,15 +162,19 @@ You can see the configuration options for sources and services with `--print-con
 ## Sources
 
 Sources define the logs to scan and how to parse them.
-Each top level directory defines a log source, either one or more log files or a systemd journal.
-A source directory must contain a `source.yaml` configuration file that define the options for the source.
-Source configurations inherit and override main configuration options.
-(Relevant command line arguments override all options.)
+Each top level directory defines a log source: either one or more log files or a systemd journal.
 If a source only has one service, the service can be defined in the source directory.
 All enabled sources are scanned by default.
 Specific sources can be enabled with the `--source` command line option and the `sources` configuration file directive.
 
 ### Source options
+
+A source directory must contain a `source.yaml` configuration file that define the options for the source.
+Source configurations inherit and override main configuration options.
+Options defined in the source apply to all services.
+(Relevant command line arguments override all options.)
+
+Sources can set options described below. These options also apply to [services](#services).
 
 | Directive                   | Type   | Description |
 | -------                     | ----   | ----------- |
@@ -179,7 +183,7 @@ Specific sources can be enabled with the `--source` command line option and the 
 | capture_fields              | list   | Set of fields to capture and made available to templates; takes precedence over `ignore_fields`; merged with service directive. [default: none] |
 | ignore_fields               | list   | Set of fields to not capture, all others are available to templates; merged with service directive. [default: none] |
 | conceal_fields              | list   | Set of fields to "conceal" from templates when iterating fields; merged with service directive; always includes 'timestamp_field' and 'message_field' fields. [default: none] |
-| rewrite_fields              | list   | Set of regular expressions to create new fields from log entry field values using [named groups](https://docs.python.org/3/howto/regex.html#non-capturing-and-named-groups); regular expressions are matched from beginning of the field value; a single field can be rewritten multiple times. [default: none] |
+| rewrite_fields              | list   | Set of regular expressions to create new fields from log entry field values using [named groups](https://docs.python.org/3/howto/regex.html#non-capturing-and-named-groups); regular expressions are matched from beginning of the field value; a single field can be rewritten multiple times; applied after `rstrip_fields`. [default: none] |
 | rstrip_fields               | list   | Set of fields to trim trailing whitespace from values. [default: none] |
 | field_types                 | list   | Define the type conversion for a field; applied after 'rewrite_fields'. [choices: int, bool] [default: none] |
 | select_rules_path           | string | Path to select rules. [default: select.yaml] |
@@ -228,12 +232,24 @@ Services define how log entries should be grouped together and which entries are
 Each subdirectory of a log source defines a service.
 Each source must have at least one service.
 If a source only has one service, the service can be defined in the source directory itself.
+All enabled services for enabled sources are scanned by default.
+Specific services for a source can be enabled with the `--service` command line option and the `services` configuration file directive.
+
+### Service options
+
 A service directory must contain a `service.yaml` configuration file that define the options for the service.
 Service configuration options inherit and override options from their source and the main configuration file.
 (Relevant command line arguments override all options.)
-Services can define and override the directives defined in its source and the main configuration file.
-All enabled services for enabled sources are scanned by default.
-Specific services for a source can be enabled with the `--service` command line option and the `services` configuration file directive.
+
+Services can set options described in [source options](#source-options) as well as those below.
+
+| Directive          | Type   | Description |
+| -------            | ----   | ----------- |
+| json_field         | string | Field to parse as a JSON dictionary and merge with log entry fields; only entries that match [select](#claiming-log-entries) rules will be parsed; fields can be used in pass and drop rules; `rewrite_fields`, `rstrip_fields` and `field_types` will be applied. [default: none] |
+| json_field_prefix  | string | Prefix to apply to dictionary field names before merging. [default: none] |
+| json_field_unset   | bool   | Unset log entry field `json_field` after merging. [default: True] |
+| json_field_promote | string | Overwrite log entry field `json_field` with the value of this field after merging. [default: none] |
+| json_field_warn    | bool   | Warn if log entry value cannot be parsed as JSON dictionary. [default: True] |
 
 ### Claiming log entries
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 from functools import cached_property
@@ -305,7 +306,7 @@ class LogService:
                 echo("> Entries matching these rules will be DROPPED:")
                 FieldRule.print_rules(self.drop_rules)
 
-    def claim_entry(self, log_entry: LogEntry) -> bool:
+    def claim_entry(self, log_entry: LogEntry) -> bool:  # noqa: C901
         """Evaluate a LogEntry and determine if this service claims it.
 
         Args:
@@ -313,38 +314,48 @@ class LogService:
 
         Returns:
             bool: True if this service claims an entry.
+
+        Raises:
+            LogAlertParserError
         """
-        rewrittenfields = self._get_rewrite_fields(log_entry)
+        # Operate on a copy of fields so we can rewrite and apply conversions
+        # without influencing other services.
+        rawfields = log_entry.rawfields | {}
 
-        # Include rewrite fields so they are available to select/drop rules
-        # but don't change 'LogEntry.rawfields' until *after* we claim the entry.
-        service_rawfields = (log_entry.rawfields | rewrittenfields) if rewrittenfields else log_entry.rawfields
-
-        # Apply converters to field values
-        self._apply_field_ops(service_rawfields)
+        # Apply converters so they are available to select/drop rules
+        if self.rstrip_fields:
+            self._apply_rstrip_fields(rawfields)
+        if self.rewrite_fields:
+            self._apply_rewrite_fields(rawfields)
+        if self.field_types:
+            self._apply_field_types(rawfields)
 
         # Select means: Entry belongs to us; empty select = select everything.
-        if self.select_rules and not self._match_rules(service_rawfields, self.select_rules):
+        if self.select_rules and not self._match_rules(rawfields, self.select_rules):
             return False
 
+        # Parse JSON fields *after* `select_rules`, otherwise it applies to *every* event!
+        if self.json_field:
+            self._apply_json_field(rawfields)
+
         # Pass means: Entry belongs to us but let someone else deal with it.
-        if self.pass_rules and self._match_rules(service_rawfields, self.pass_rules):
+        if self.pass_rules and self._match_rules(rawfields, self.pass_rules):
             self.pass_count += 1
             return False
 
         # Drop means: Entry belongs to us but we don't care about it.
-        if self.drop_rules and self._match_rules(service_rawfields, self.drop_rules):
+        if self.drop_rules and self._match_rules(rawfields, self.drop_rules):
             self.drop_count += 1
             return True
 
         # Capture/ignore fields as configured
         capture_fields = self.capture_fields
         if not capture_fields and self.ignore_fields:
-            capture_fields = set(service_rawfields.keys()) - self.ignore_fields
+            capture_fields = set(rawfields.keys()) - self.ignore_fields
         if capture_fields:
-            service_rawfields = {k: service_rawfields.get(k) for k in capture_fields}
+            rawfields = {k: rawfields.get(k) for k in capture_fields}
 
-        log_entry.rawfields = service_rawfields
+        log_entry.rawfields = rawfields
         log_entry.conceal_fields = self.conceal_fields
 
         self.logentries.append(log_entry)
@@ -355,8 +366,8 @@ class LogService:
 
         return True
 
-    def _apply_field_ops(self, rawfields: dict) -> None:
-        """Apply conversion operations to field values.
+    def _apply_rstrip_fields(self, rawfields: dict) -> None:
+        """Apply 'rstrip' operations to field values.
 
         Args:
             rawfields (dict): Log entry fields.
@@ -367,11 +378,62 @@ class LogService:
                 if field in rawfields and isinstance(rawfields[field], str):
                     rawfields[field] = rawfields[field].rstrip()
 
-        # Convert fields to native types (same function as source.field_converters)
+    def _apply_field_types(self, rawfields: dict) -> None:
+        """Convert fields to native types as defined in `field_types`.
+
+        Same function as `source.field_converters` but defined by the service.
+
+        Args:
+            rawfields (dict): Log entry fields.
+        """
         if self.field_types:
             for field, field_type in self.field_types.items():
                 if field in rawfields:
                     rawfields[field] = field_type(rawfields[field])
+
+    def _apply_json_field(self, rawfields: dict) -> None:  # noqa: C901, PLR0912
+        """Apply `json_field` to field values.
+
+        Args:
+            rawfields (dict): Log entry fields.
+
+        Raises:
+            LogAlertParserError
+        """
+        if self.json_field:
+            field_value = rawfields.get(self.json_field)
+            if field_value:
+                field_value = field_value.rstrip()
+                if field_value.startswith("{") and field_value.endswith("}"):
+                    try:
+                        json_value = json.loads(field_value)
+                    except json.JSONDecodeError as err:
+                        if self.json_field_warn:
+                            raise LogAlertParserError(f"'{self.json_field}': Invalid JSON? {err}: '{field_value}'") from err
+                    else:
+                        if not isinstance(json_value, dict):
+                            raise LogAlertParserError(f"'{self.json_field}': Expected JSON dict: '{field_value}'")
+
+                        if self.json_field_prefix:
+                            json_value = {f"{self.json_field_prefix}{k}": v for k, v in json_value.items()}
+
+                        if self.rstrip_fields:
+                            self._apply_rstrip_fields(json_value)
+                        if self.rewrite_fields:
+                            self._apply_rewrite_fields(json_value)
+                        if self.field_types:
+                            self._apply_field_types(json_value)
+
+                        rawfields.update(json_value)
+
+                        if self.json_field_unset:
+                            del rawfields[self.json_field]
+                        if self.json_field_promote and self.json_field_promote in rawfields:
+                            rawfields[self.json_field] = rawfields[self.json_field_promote]
+                            del rawfields[self.json_field_promote]
+
+                elif self.json_field_warn:
+                    raise LogAlertParserError(f"'{self.json_field}': Expected JSON: '{field_value}'")
 
     def _match_rules(self, fields: dict, block_rules_list: list[dict[str, FieldRule]]) -> bool:
         """Evaluates list of rule blocks against log entry fields.
@@ -396,33 +458,29 @@ class LogService:
 
         return match_found
 
-    def _get_rewrite_fields(self, log_entry: LogEntry) -> dict:
+    def _apply_rewrite_fields(self, rawfields: dict) -> None:
         """Applies 'rewrite_fields' rules to create new log entry fields.
 
         Args:
-            log_entry (LogEntry): Log entry.
+            rawfields (dict): Log entry fields.
 
-        Returns:
-            dict: New field values; empty if there are no rewrite expressions.
+        Raises:
+            LogAlertParserError
         """
-        newfields = {}
-
         if self.rewrite_fields:
             for field, pattern in self.rewrite_fields:
                 # Rewrites can be applied to the same field more than once
-                field_value = newfields.get(field) if field in newfields else log_entry.rawfields.get(field)
+                field_value = rawfields.get(field)
 
                 try:
                     matches = pattern.match(field_value) if field_value else None
                 except TypeError as err:
-                    raise LogAlertParserError(f"Failed to rewrite field '{field}={field_value}': {err}") from err
+                    raise LogAlertParserError(f"'{field}': Failed to rewrite field: '{field_value}': {err}") from err
                 else:
                     if matches:
                         named_groups = matches.groupdict()
                         if named_groups:
-                            newfields.update(named_groups)
-
-        return newfields
+                            rawfields.update(named_groups)
 
     def _build_rules(self, rules_config_path: Path) -> tuple[dict] | None:
         """Build ruleset for given configuration file.
@@ -613,7 +671,7 @@ class LogService:
         Returns:
             bool
         """
-        return not self.select_rules and not self.drop_rules
+        return not bool(self.select_rules or self.drop_rules)
 
     ######################################################################
     # Helper functions

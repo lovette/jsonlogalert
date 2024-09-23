@@ -100,6 +100,11 @@ SERVICE_CONF_DEFAULTS = COMMAND_OPTS_DEFAULTS | {
     "enabled": True,
     "field_types": None,
     "ignore_fields": None,
+    "json_field_prefix": None,
+    "json_field_promote": None,
+    "json_field_unset": True,
+    "json_field_warn": False,
+    "json_field": None,
     "output_content_type": None,
     "output_max_bytes": None,
     "output_template_minify_html": None,
@@ -114,6 +119,12 @@ conf_del_keys(SERVICE_CONF_DEFAULTS, COMMAND_OPTS_ONLY)
 conf_del_keys(SERVICE_CONF_DEFAULTS, COMMAND_OPTS_SOURCE_ONLY)
 
 SERVICE_CONFFILE_DIRECTIVES = set(SERVICE_CONF_DEFAULTS.keys())
+
+SERVICE_ONLY_DIRECTIVES = set()
+for opt_prefix in ("json_field",):
+    for k in SERVICE_CONFFILE_DIRECTIVES:
+        if k.startswith(opt_prefix):
+            SERVICE_ONLY_DIRECTIVES.add(k)
 
 ######################################################################
 # Options that can be set in `source.yaml`
@@ -133,7 +144,7 @@ SOURCE_CONF_DEFAULTS = (
 # Remove directives that only apply to main configuration file.
 conf_del_keys(SOURCE_CONF_DEFAULTS, COMMAND_OPTS_ONLY)
 
-SOURCE_CONFFILE_DIRECTIVES = set(SOURCE_CONF_DEFAULTS.keys())
+SOURCE_CONFFILE_DIRECTIVES = set(SOURCE_CONF_DEFAULTS.keys()) - SERVICE_ONLY_DIRECTIVES
 
 FILE_SOURCE_ONLY_DIRECTIVES = {"logfiles", "onelog"}
 for opt_prefix in ("tail_file",):
