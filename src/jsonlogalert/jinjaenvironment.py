@@ -79,7 +79,10 @@ def _jinja_nl2br(eval_ctx: object, value: str) -> str:
 
 @pass_context
 def _jinja_logentries_groupby(
-    context: runtime.Context, fields: str | Sequence, default_group: str | Sequence | None = None
+    context: runtime.Context,
+    fields: str | Sequence,
+    default_group: str | Sequence | None = None,
+    default_last: bool = True,
 ) -> ItemsView[str | tuple[str], list[LogEntry]]:
     """Group logentries by field value.
 
@@ -89,6 +92,7 @@ def _jinja_logentries_groupby(
         context (runtime.Context): Jinja template context.
         fields (str | Sequence): Field name or sequence of fields (list or tuple).
         default_group (str | Sequence | None, optional): Default group value or sequence of values. Defaults to 'fields'.
+        default_last (bool): Sort default group first or last. Defaults to last.
 
     Returns:
         ItemsView: ItemsView[(group, logentries)] where `group` is a field value or tuple of field values.
@@ -122,10 +126,13 @@ def _jinja_logentries_groupby(
     groupby_entries = dict(sorted(groupby_entries.items()))
 
     if default_group in groupby_entries and len(groupby_entries) > 1:
-        # sort default group last
         default_entries = groupby_entries[default_group]
         del groupby_entries[default_group]
-        groupby_entries[default_group] = default_entries
+
+        if default_last:
+            groupby_entries[default_group] = default_entries
+        else:
+            groupby_entries = {default_group: default_entries} | groupby_entries
 
     return groupby_entries.items()
 

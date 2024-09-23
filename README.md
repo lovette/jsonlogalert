@@ -492,11 +492,16 @@ Templates access details about log entries, their source and service using templ
 &bull; `logentries_groupby` - Group `logentries` by one or more field values.
 
 	```
-	logentries_groupby(fields: str | Sequence, default_group: str | Sequence | None = None) -> ItemsView[str | tuple[str], list[LogEntry]]
+	def logentries_groupby(
+		fields: str | Sequence,
+		default_group: str | Sequence | None = None,
+		default_last: bool = True,
+	) -> ItemsView[str | tuple[str], list[LogEntry]]:
 
 	Args:
 		fields (str | Sequence): Field name or sequence of fields (list or tuple).
 		default_group (str | Sequence | None, optional): Default group value or sequence of values. Defaults to 'fields'.
+		default_last (bool): Sort default group first or last. Defaults to last.
 
 	Returns:
 		ItemsView: ItemsView[(group, logentries)] where `group` is a field value or tuple of field values.
