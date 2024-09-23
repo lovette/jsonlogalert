@@ -50,11 +50,11 @@ class LogAlertOutput:
         Returns:
             Optional[Any]: Field value
         """
-        if key.startswith("output_"):
-            return self.service.service_config.get(key)
-
-        # For some reason I can't do this in this class (which I do in LogSource :/):
-        # > return super().__getattr__(key)
+        try:
+            if key.startswith("output_"):
+                return self.service.service_config[key]
+        except KeyError:
+            pass
 
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'")
 
