@@ -186,7 +186,8 @@ Specific sources can be enabled with the `--source` command line option and the 
 | pass_rules_path             | string | Path to pass rules. [default: pass.yaml] |
 | drop_rules_path             | string | Path to drop rules. [default: drop.yaml] |
 | max_logentries              | int    | Maximum number of entries to report, everything else will be discarded; set to 0 to disable limit; can override with command line option `--max-logentries` [default: 250] |
-| output_content_type         | string | Output content type; used as the extension for output file names. [default: 'output_template_file' file extension.] |
+| output_content_type         | string | Output content type; used as the extension for output file names. [default: 'output_template_file' file extension] |
+| output_max_bytes            | int    | Maximum bytes allowed to output. [default: depends on output type] |
 | output_template_file        | string | Output template file name. Must be in the service, source or source parent directory; can override with command line option `--output-template-file`. [default: none] |
 | output_template_minify_html | int    | True if template content is HTML and should be minified. [default: 1] |
 | timestamp_field             | string | Log entry field that is the event timestamp. [default: "TIMESTAMP"] |

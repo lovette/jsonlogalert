@@ -87,7 +87,10 @@ class LogAlertOutput:
         Returns:
             int
         """
-        return self.service.service_config.get("output_max_bytes", self.output_max_bytes_default)
+        output_max_bytes = self.service.output_max_bytes
+        if output_max_bytes is None:
+            output_max_bytes = self.output_max_bytes_default
+        return output_max_bytes
 
     @cached_property
     def output_content_type(self) -> str:
