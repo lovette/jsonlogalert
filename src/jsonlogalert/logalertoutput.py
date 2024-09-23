@@ -75,7 +75,10 @@ class LogAlertOutput:
         Returns:
             bool
         """
-        return bool(self.service.service_config.get("output_template_minify_html", self.output_content_type == "html"))
+        output_template_minify_html = self.service.output_template_minify_html
+        if output_template_minify_html is None:
+            output_template_minify_html = self.output_content_type == "html"
+        return bool(output_template_minify_html)
 
     @cached_property
     def output_max_bytes(self) -> int:
@@ -88,19 +91,22 @@ class LogAlertOutput:
 
     @cached_property
     def output_content_type(self) -> str:
-        """Service output content type: html or txt.
+        """Service output content type; typically 'html' or 'txt'.
+
+        Defaults to 'output_template_file' file extension.
+        Used as the file extension for output files.
 
         Returns:
             str
         """
-        output_content_type = self.service.service_config.get("output_content_type")
+        output_content_type = self.service.output_content_type
 
         if not output_content_type:
             suffix = Path(self.output_template_file).suffix
             if suffix:
-                output_content_type = suffix.removeprefix(".")
+                output_content_type = "html" if suffix == ".jinja-html" else suffix.removeprefix(".")
 
-        return "html" if output_content_type == "html" else "txt"
+        return output_content_type
 
     def validate_conf(self) -> None:
         """Valiate output configuration properties."""

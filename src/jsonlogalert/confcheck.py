@@ -101,7 +101,7 @@ SERVICE_CONF_DEFAULTS = COMMAND_OPTS_DEFAULTS | {
     "field_types": None,
     "ignore_fields": None,
     "output_content_type": None,
-    "output_template_minify_html": False,
+    "output_template_minify_html": None,
     "pass_rules_path": None,
     "rewrite_fields": None,
     "rstrip_fields": None,
