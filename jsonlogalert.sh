@@ -6,7 +6,11 @@
 
 set -u
 
+# 'install.sh' hard-codes VENVDIR to the virtual environment path;
+# Defaulting to VIRTUAL_ENV is a dev environment fallback.
+VIRTUAL_ENV="${VIRTUAL_ENV:-}"
 VENVDIR=
+VENVDIR="${VENVDIR:-$VIRTUAL_ENV}"
 SCRIPT="$VENVDIR"/bin/jsonlogalert
 SYSTEMD_ETC=/etc/systemd/system
 
@@ -83,7 +87,7 @@ if [ -n "${1:-}" ] && [ "$1" = "systemd" ]; then
     exit 0
 fi
 
-[ -n "$VENVDIR" ] || die "This script is a stub; VENVDIR must be set when this script is installed."
+[ -n "$VENVDIR" ] || die "This script is a stub; it is not standalone until install.sh copies it; you can also set VIRTUAL_ENV"
 [ -d "$VENVDIR" ] || die "$VENVDIR: No such directory."
 [ -f "$SCRIPT"  ] || die "$SCRIPT: No such file."
 
