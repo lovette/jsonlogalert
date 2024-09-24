@@ -43,8 +43,8 @@ parse_args()
 install_etc()
 {
   install -d "${ETCDIR}"
-  install default-config.yaml "${ETCDIR}"/jsonlogalert.conf
-  (cd default-config.d && find . -type f -exec install -D "{}" "/etc/jsonlogalert.d/{}" \;)
+  [ -e "${ETCDIR}"/jsonlogalert.conf ] || install default-config.yaml "${ETCDIR}"/jsonlogalert.conf
+  [ -e "/etc/jsonlogalert.d" ] || (cd default-config.d && find . -type f -exec install -D "{}" "/etc/jsonlogalert.d/{}" \;)
 }
 
 install_extras()
