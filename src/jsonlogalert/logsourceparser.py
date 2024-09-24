@@ -21,7 +21,7 @@ class LogSourceParser:
         self.source = log_source
 
         # Converters will be applied to captured fields
-        self.field_converters = None
+        self.field_converters = {}
 
     def parse_line(self, log_line: str) -> dict:
         """Parse source log entry into a dict of structured fields.

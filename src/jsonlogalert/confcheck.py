@@ -138,6 +138,7 @@ SOURCE_CONF_DEFAULTS = (
         "message_field": None,
         "onelog": False,
         "timestamp_field": None,
+        "timestamp_field_format": None,
     }
 )
 

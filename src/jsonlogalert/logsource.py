@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -166,7 +167,7 @@ class LogSource:
         Returns:
             Optional[dict[str, callable]]
         """
-        return self.source_parser.field_converters
+        return self.source_parser.field_converters or None
 
     @cached_property
     def onelog(self) -> bool:
@@ -206,6 +207,12 @@ class LogSource:
             self.load_parser()
         else:
             self.source_parser = LogSourceParser(self)
+
+        # Convert timestamp field along with other fields
+        if self.timestamp_field_format:
+            if self.timestamp_field in self.source_parser.field_converters:
+                self.config_error(f"'{self.timestamp_field}': Field converter already set; 'timestamp_field_format' cannot be applied.")
+            self.source_parser.field_converters[self.timestamp_field] = lambda ts: datetime.strptime(ts, self.timestamp_field_format)  # noqa: DTZ007
 
         self.services = LogService.load_services(self, cli_config)
 
@@ -393,7 +400,7 @@ class LogSource:
                     try:
                         rawfields[field] = fn(rawfields[field])
                     except ValueError as err:
-                        raise LogAlertParserError(f"{err}: '{log_line}'") from err
+                        raise LogAlertParserError(f"Field conversion failed: '{field}': {err}: '{log_line}'") from err
 
     def tail_source(self) -> None:
         """Tail log source as configured.
@@ -503,7 +510,10 @@ class LogSource:
 
         # Using !r uses repr() which quotes strings.
         for k, v in sorted(self.field_converters.items()):
-            echo(f"{k}: {v.__name__!r}")
+            if k == self.timestamp_field and self.timestamp_field_format:
+                echo(f"{k}: datetime({self.timestamp_field_format!r})")
+            else:
+                echo(f"{k}: {v.__name__!r}")
 
         for log_service in self.services:
             if log_service.field_types:
