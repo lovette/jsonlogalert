@@ -137,6 +137,7 @@ SOURCE_CONF_DEFAULTS = (
         "logfiles": (),
         "message_field": None,
         "onelog": False,
+        "promote_fields": None,
         "timestamp_field": None,
         "timestamp_field_format": None,
     }

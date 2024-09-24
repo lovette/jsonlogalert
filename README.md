@@ -174,7 +174,7 @@ Source configurations inherit and override main configuration options.
 Options defined in the source apply to all services.
 (Relevant command line arguments override all options.)
 
-Sources can set options described below. These options also apply to [services](#services).
+These options apply to both sources and [services](#services):
 
 | Directive                   | Type   | Description |
 | -------                     | ----   | ----------- |
@@ -194,9 +194,15 @@ Sources can set options described below. These options also apply to [services](
 | output_max_bytes            | int    | Maximum bytes allowed to output. [default: depends on output type] |
 | output_template_file        | string | Output template file name. Must be in the service, source or source parent directory; can override with command line option `--output-template-file`. [default: none] |
 | output_template_minify_html | int    | True if template content is HTML and should be minified. [default: 1] |
+
+These options apply only to sources:
+
+| Directive                   | Type   | Description |
+| -------                     | ----   | ----------- |
+| message_field               | string | Log entry field that is the event message. [default: "MESSAGE"] |
 | timestamp_field             | string | Log entry field that is the event timestamp. [default: "TIMESTAMP"] |
 | timestamp_field_format      | string | Parse `timestamp_field` field values according to this format; see [datetime.strptime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) for format codes. [default: none] |
-| message_field               | string | Log entry field that is the event message. [default: "MESSAGE"] |
+| promote_fields              | list   | Set of JSON dictionary fields to promote up a level; valid only for JSON logs; applied one after the other so nested dictionaries can be promoted; applied prior to rule evaluations. [default: none] |
 
 ### Journal options
 

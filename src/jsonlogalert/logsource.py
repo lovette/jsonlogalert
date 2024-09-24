@@ -150,6 +150,15 @@ class LogSource:
         return blob_fields | DEFAULT_BLOB_FIELDS
 
     @cached_property
+    def promote_fields(self) -> list | None:
+        """List of fields to promote.
+
+        Returns:
+            list
+        """
+        return self.source_config.get("promote_fields") or None
+
+    @cached_property
     def source_parser_path(self) -> Path:
         """Path to source parser module.
 
@@ -382,7 +391,7 @@ class LogSource:
         if not fields:
             raise LogAlertParserError("Parser returned an empty dict")
         if not isinstance(fields, dict):
-            raise LogAlertParserError(f"Parser returned a {type(fields).__name__}; expected 'dict'")
+            raise LogAlertParserError(f"Parser returned type '{type(fields).__name__}'; expected 'dict'")
 
         return fields
 
@@ -393,6 +402,19 @@ class LogSource:
             rawfields (dict): Log entry fields and values.
             log_line (str): Log line.
         """
+        if self.promote_fields:
+            for field in self.promote_fields:
+                if field in rawfields:
+                    promote_dict = rawfields[field]
+                    if promote_dict:
+                        if not isinstance(promote_dict, dict):
+                            raise LogAlertParserError(
+                                f"Field promotion failed: '{field}': type is '{type(promote_dict).__name__}'; expected 'dict': '{log_line}'"
+                            )
+                        promote_dict = {f"{field}_{k}": v for k, v in promote_dict.items()}
+                        del rawfields[field]
+                        rawfields.update(promote_dict)
+
         # Convert fields to native types
         if self.field_converters:
             for field, fn in self.field_converters.items():
