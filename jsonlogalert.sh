@@ -73,8 +73,8 @@ if [ -n "${1:-}" ] && [ "$1" = "systemd" ]; then
 
     if [ "$systemd_cmd" = "list" ]; then
         find "$SYSTEMD_ETC" -maxdepth 1 -regextype egrep -regex '.*/jsonlogalert-[^.]+\.(path|timer)' -printf "%f\n"
-    elif [ "systemd_cmd" = "enable" ] || [ "systemd_cmd" = "disable" ]; then
-        find "$SYSTEMD_ETC" -maxdepth 1 -regextype egrep -regex '.*/jsonlogalert-[^.]+\.(path|timer)' -printf "%f\n" | xargs --no-run-if-empty --verbose systemctl --quiet --no-reload "$2" --now
+    elif [ "$systemd_cmd" = "enable" ] || [ "$systemd_cmd" = "disable" ]; then
+        find "$SYSTEMD_ETC" -maxdepth 1 -regextype egrep -regex '.*/jsonlogalert-[^.]+\.(path|timer)' -printf "%f\n" | xargs --no-run-if-empty --verbose systemctl --quiet --no-reload "$systemd_cmd" --now
         systemctl daemon-reload
     elif [ "$systemd_cmd" = "uninstall" ]; then
         find "$SYSTEMD_ETC" -maxdepth 1 -regextype egrep -regex '.*/jsonlogalert-[^.]+\.(path|timer|service)' -delete
