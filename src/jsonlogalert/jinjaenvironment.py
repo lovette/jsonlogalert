@@ -78,7 +78,7 @@ def _jinja_nl2br(eval_ctx: object, value: str) -> str:
 
 
 @pass_context
-def _jinja_logentries_groupby(
+def _jinja_logentries_groupby(  # noqa: C901, PLR0912
     context: runtime.Context,
     fields: str | Sequence,
     default_group: str | Sequence | None = None,
@@ -107,6 +107,9 @@ def _jinja_logentries_groupby(
 
         for entry in context.parent.get("logentries"):
             group = entry.rawfields.get(fields, default_group)
+            if isinstance(group, list):
+                # Support JSON log sources where some fields are a list (e.g. caddyserver)
+                group = tuple(group)
             groupby_entries[group].append(entry)
     else:
         if isinstance(default_group, str):
@@ -119,7 +122,10 @@ def _jinja_logentries_groupby(
 
         for entry in context.parent.get("logentries"):
             for i, field in enumerate(fields):
-                groupby_fields[i] = entry.rawfields.get(field, default_group[i])
+                group = entry.rawfields.get(field, default_group[i])
+                if isinstance(group, list):
+                    group = tuple(group)
+                groupby_fields[i] = group
             groupby_entries[tuple(groupby_fields)].append(entry)
 
     # Sort by key
