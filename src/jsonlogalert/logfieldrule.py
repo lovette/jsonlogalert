@@ -143,9 +143,11 @@ class FieldRule:
             elif rule_op.endswith("^"):
                 rule_cls = FieldRuleRegexMatch if single_value else FieldRuleRegexMatchList
                 field_rule = rule_cls(rule_op, rule_values)
-            else:
-                rule_cls = FieldRuleOperator if single_value else FieldRuleOperatorList
+            elif rule_op.endswith("="):
+                rule_cls = FieldRuleOperator if single_value else FieldRuleInSet
                 field_rule = rule_cls(rule_op, rule_values)
+            else:
+                raise FieldRuleError(f"Unrecognized operator: '{rule_op}'")
 
             return field_rule
 
@@ -504,3 +506,55 @@ class FieldRuleHasField(FieldRule):
             bool: True if rule matches.
         """
         return args[0] is None if self.rule_negate else args[0] is not None
+
+
+######################################################################
+# FieldRuleInSet
+
+
+class FieldRuleInSet(FieldRuleOperatorList):
+    """Field rule that evaluates whether a field value is in a set of values."""
+
+    def __init__(self, rule_op: str, rule_values: Sequence) -> None:
+        """Constructor.
+
+        Args:
+            rule_op (str): Rule operator.
+            rule_values (Sequence): List of values; only the first is used.
+        """
+        super().__init__(rule_op, rule_values)
+
+        assert self.rule_op == "="
+
+        self.value_set = set(self.rule_value)
+
+        if len(self.value_set) < 2:  # noqa: PLR2004
+            raise FieldRuleError("operator 'in set' requires more than one value.")
+
+    def __repr__(self) -> str:
+        """String representation of object.
+
+        Returns:
+            str:
+        """
+        class_name = type(self).__name__
+        negate = "!" if self.rule_negate else ""
+        return f"{class_name}({negate}{self.value_set!r})"
+
+    def __str__(self) -> str:
+        """Return string representation of an object used in print().
+
+        Returns:
+            str
+        """
+        rule_op = "not in" if self.rule_negate else "in"
+        return f"{rule_op} set {self.rule_value!r}"
+
+    def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
+        """Evaluate rule.
+
+        Returns:
+            bool: True if rule matches.
+        """
+        found_match = args[0] in self.value_set
+        return not found_match if self.rule_negate else found_match
