@@ -154,7 +154,7 @@ for opt_prefix in ("tail_file",):
         if k.startswith(opt_prefix):
             FILE_SOURCE_ONLY_DIRECTIVES.add(k)
 
-JOURNAL_SOURCE_ONLY_DIRECTIVES = set()
+JOURNAL_SOURCE_ONLY_DIRECTIVES = {"blob_fields"}
 for opt_prefix in ("journal", "tail_journal"):
     for k in SOURCE_CONFFILE_DIRECTIVES:
         if k.startswith(opt_prefix):
