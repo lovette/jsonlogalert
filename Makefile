@@ -121,7 +121,7 @@ endif
 install.sh: $(wildcard makeinstallsh/*.sh)
 	makeinstallsh/make.sh > install.sh
 
-man/jsonlogalert.1: src/jsonlogalert/__main__.py
+man/jsonlogalert.1: src/jsonlogalert/__main__.py pyproject.toml
 ifndef VIRTUAL_ENV
 	$(ERROR_NO_VIRTUALENV)
 endif
