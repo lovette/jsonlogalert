@@ -15,3 +15,9 @@ Steps for building a release package:
 1. Check [Releases](https://github.com/lovette/jsonlogalert/releases) after [build release action](https://github.com/lovette/jsonlogalert/actions) is complete.
 
 Then repeat the steps above with "-dev" appended to the version and without tagging the commit.
+
+# Update requirements
+
+    rm requirements*.txt
+    make requirements
+    make install-dev
