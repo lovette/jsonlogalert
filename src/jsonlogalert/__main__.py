@@ -499,6 +499,13 @@ def _override_output_opts(cli_config: dict) -> None:
     default=False,
     help="Print source field types and exit.",
 )
+@optgroup.option(
+    "--skip-drop-rules",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Skip drop rules.",
+)
 @click.argument(
     "log_file_streams",
     type=click.File("r"),
@@ -536,6 +543,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     print_rules: bool,
     services: tuple[str],  ## noqa: ARG001
     slowroll_sec: int,
+    skip_drop_rules: bool,  ## noqa: ARG001
     sources: tuple[str],  ## noqa: ARG001
     tail_dryrun: bool,  ## noqa: ARG001
     tail_file_bin: Path,  ## noqa: ARG001

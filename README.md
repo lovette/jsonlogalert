@@ -110,6 +110,12 @@ Options specified on the command line override those in configuration files.
 | wait_sec       | --wait           | Wait SECONDS before scanning (give logs time to settle.) [default: 0] |
 | batch_interval | --batch-interval | Watch for more log activity within SECONDS. [default: 0] |
 
+### Service options
+
+| Directive       | Command line      | Description |
+| ---------       | ------------      | ----------- |
+| skip_drop_rules | --skip-drop-rules | Skip drop rules. |
+
 ### General tail options
 
 | Directive      | Command line     | Description |

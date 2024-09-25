@@ -344,7 +344,7 @@ class LogService:
             return False
 
         # Drop means: Entry belongs to us but we don't care about it.
-        if self.drop_rules and self._match_rules(rawfields, self.drop_rules):
+        if self.drop_rules and not self.skip_drop_rules and self._match_rules(rawfields, self.drop_rules):
             self.drop_count += 1
             return True
 

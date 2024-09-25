@@ -70,6 +70,7 @@ COMMAND_OPTS_DEFAULTS = {
     "output_stdout": False,
     "output_template_file": None,
     "services": (),
+    "skip_drop_rules": False,
     "sources": (),
     "tail_dryrun": False,
     "tail_file_bin": "logtail2",
