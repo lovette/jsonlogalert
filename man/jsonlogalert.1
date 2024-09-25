@@ -124,6 +124,18 @@ Email sender name.  [default: recipient name]
 \fB\-\-output\-smtp\-subject\fP SUBJECT
 Email subject line.
 .TP
+\fBTIMING\fP OPTIONS:
+.PP
+.TP
+\fB\-\-wait\fP SECONDS
+Wait SECONDS before scanning (give logs time to settle.)
+.TP
+\fB\-\-slowroll\fP SECONDS
+Watch for log activity for no less than SECONDS (to satisfy rate limits.)
+.TP
+\fB\-\-batch\-interval\fP SECONDS
+Watch for more log activity within SECONDS.
+.TP
 \fBDIAGNOSTIC\fP OPTIONS:
 .PP
 .TP

@@ -5,6 +5,7 @@ import io
 import logging
 import shutil
 import sys
+import time
 from pathlib import Path
 
 import click
@@ -442,6 +443,33 @@ def _override_output_opts(cli_config: dict) -> None:
     metavar="SUBJECT",
     help="Email subject line.",
 )
+@optgroup.group("TIMING OPTIONS")
+@optgroup.option(
+    "--wait",
+    "wait_sec",
+    type=int,
+    default=0,
+    show_default=False,
+    metavar="SECONDS",
+    help="Wait SECONDS before scanning (give logs time to settle.)",
+)
+@optgroup.option(
+    "--slowroll",
+    "slowroll_sec",
+    type=int,
+    default=0,
+    show_default=False,
+    metavar="SECONDS",
+    help="Watch for log activity for no less than SECONDS (to satisfy rate limits.)",
+)
+@optgroup.option(
+    "--batch-interval",
+    type=int,
+    default=0,
+    show_default=False,
+    metavar="SECONDS",
+    help="Watch for more log activity within SECONDS.",
+)
 @optgroup.group("DIAGNOSTIC OPTIONS")
 @optgroup.option(
     "--dry-run",
@@ -480,6 +508,7 @@ def _override_output_opts(cli_config: dict) -> None:
 @click.pass_context
 def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     ctx: click.Context,
+    batch_interval: int,  ## noqa: ARG001
     config_dir: Path,
     dry_run: bool,
     journal_dir: Path,  ## noqa: ARG001
@@ -506,6 +535,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     print_field_types: bool,
     print_rules: bool,
     services: tuple[str],  ## noqa: ARG001
+    slowroll_sec: int,
     sources: tuple[str],  ## noqa: ARG001
     tail_dryrun: bool,  ## noqa: ARG001
     tail_file_bin: Path,  ## noqa: ARG001
@@ -516,6 +546,7 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     tail_reset: bool,
     tail_state_dir: Path,
     verbose: int,
+    wait_sec: int,  ## noqa: ARG001
 ) -> int:
     """Read JSON structured logs and filter entries for unusual activity.
 
@@ -627,16 +658,41 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     if output_file_name and services_count > 1:
         raise LogAlertConfigError("A single '--service' with a single log file must be specified to use '--output-file-name'")
 
-    for log_source in log_sources:
-        log_source.reset()
+    def _scan_sources(log_sources: list[LogSource]) -> None:
+        for log_source in log_sources:
+            log_source.reset()
 
-        try:
-            log_source.tail_source()
-        except LogAlertTailError as err:
-            # Not fatal, output whatever may have been streamed
-            logging.error(f"{err}")  # noqa: TRY400
+            try:
+                log_source.scan_source_batch()
+            except LogAlertTailError as err:
+                # Not fatal, output whatever may have been streamed
+                logging.error(f"{err}")  # noqa: TRY400
 
-        log_source.output()
+            log_source.output()
+
+    if slowroll_sec:
+        logging.debug(f"Will run at least {slowroll_sec}s before ending scan")
+
+    start_time = time.monotonic()
+    slowroll_sleep = slowroll_sec
+
+    while True:
+        _scan_sources(log_sources)
+
+        if not slowroll_sec:
+            # Once and done!
+            break
+
+        elapsed_time = time.monotonic() - start_time
+        slowroll_sleep = int(max(0, slowroll_sec - elapsed_time))
+
+        if slowroll_sec < elapsed_time:
+            logging.debug("Slowroll ended; time expired")
+            break
+
+        if slowroll_sleep:
+            logging.debug(f"Slowroll waiting {slowroll_sleep}s...")
+            time.sleep(slowroll_sleep)
 
     logging.debug("Done!")
 

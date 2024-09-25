@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import subprocess
+import time
 from functools import cached_property
 
 from click import echo
@@ -32,6 +33,7 @@ INCLUDE_FILTER_ALL = "*"
 TIMESTAMP_FIELD_DEFAULT = "TIMESTAMP"
 MESSAGE_FIELD_DEFAULT = "MESSAGE"
 DEFAULT_BLOB_FIELDS = {MESSAGE_FIELD_DEFAULT}
+BATCH_MAX_SEC = 50  # just shy of one minute seems good
 
 
 ######################################################################
@@ -55,6 +57,8 @@ class LogSource:
 
         self.timestamp_field_default = TIMESTAMP_FIELD_DEFAULT
         self.message_field_default = MESSAGE_FIELD_DEFAULT
+
+        self.batch_count = 0
 
         # These need to be reset() between iterations
         self.services: tuple[LogService] = None
@@ -264,11 +268,14 @@ class LogSource:
         if not self.source_parser:
             _raise_load_parser_failure("Source parser is not implemented")
 
-    def tail_exec(self, exec_args: tuple[str]) -> None:
-        """Execute a tail command and read its output with `parse_stream`.
+    def scan_stream_exec(self, exec_args: tuple[str]) -> int:
+        """Execute a command and scan its output with `scan_stream`.
 
         Args:
-            exec_args (tuple[str]): Tail command line.
+            exec_args (tuple[str]): Command arguments.
+
+        Returns:
+            Number of log lines scanned.
 
         Raises:
             LogAlertTailError: Tail failed.
@@ -307,10 +314,12 @@ class LogSource:
 
         self.log_debug(f"Executing '{' '.join(exec_args)}'")
 
+        line_count = 0
+
         try:
             with subprocess.Popen(exec_args, **pipe_options) as ps_tail:  # noqa: S603
                 try:
-                    self.parse_stream(ps_tail.stdout, "<stdout>")
+                    line_count += self.scan_stream(ps_tail.stdout, "<stdout>")
 
                 except Exception as err:
                     # Wait for process to exit
@@ -330,7 +339,9 @@ class LogSource:
         except (TypeError, ValueError) as err:
             raise LogAlertTailError(_tail_exc_msg("Exec tail Popen failed", err, retcode)) from err
 
-    def parse_stream(self, log_file_stream: io.TextIOWrapper, stream_name: str) -> None:
+        return line_count
+
+    def scan_stream(self, log_file_stream: io.TextIOWrapper, stream_name: str) -> int:
         """Parse a file stream where each line is a JSON structured message.
 
         The file content is expected to be a series of objects each separated by a newline.
@@ -339,6 +350,9 @@ class LogSource:
         Args:
             log_file_stream (io.TextIOWrapper): Open file.
             stream_name (str): Name of stream (for logging)
+
+        Returns:
+            Number of log lines scanned.
         """
         self.log_debug(f"Parsing stream {stream_name}...")
 
@@ -373,6 +387,8 @@ class LogSource:
 
         if unclaimed_line_count:
             self.log_error(f"Failed to claim {unclaimed_line_count} lines from stream")
+
+        return line_count
 
     def parse_line(self, log_line: str) -> dict:
         """Parse source log entry into a dict of structured fields.
@@ -424,12 +440,69 @@ class LogSource:
                     except ValueError as err:
                         raise LogAlertParserError(f"Field conversion failed: '{field}': {err}: '{log_line}'") from err
 
-    def tail_source(self) -> None:
-        """Tail log source as configured.
+    def scan_source(self) -> int:
+        """Scan log source once.
 
         Must be implemented in derived classes.
+
+        Returns:
+            Number of log lines scanned.
+
+        Raises:
+            LogAlertTailError: Tail failed.
         """
         raise NotImplementedError
+
+    def scan_source_batch(self) -> int:
+        """Scan log source and batch activity if configured.
+
+        Returns:
+            Number of log lines scanned.
+
+        Raises:
+            LogAlertTailError: Tail failed.
+        """
+        wait_sec = self.wait_sec
+        batch_interval = self.batch_interval
+        max_logentries = int(self.max_logentries * 0.75)
+        batch_line_count = 0
+
+        # Only wait on first batch
+        if wait_sec and not self.batch_count:
+            self.log_debug(f"Waiting {wait_sec}s before scan...")
+            time.sleep(wait_sec)
+
+        start_time = time.monotonic()
+
+        while True:
+            self.batch_count += 1
+
+            line_count = self.scan_source()
+            batch_line_count += line_count
+
+            if not batch_interval:
+                # Once and done!
+                break
+
+            if not line_count:
+                self.log_debug("Batch ended; no activity")
+                break
+
+            self.log_debug(f"Batch continued; {line_count} more lines scanned")
+
+            if max_logentries < batch_line_count:
+                self.log_debug(f"Batch ended; >{max_logentries} lines scanned")
+                break
+
+            elapsed_time = time.monotonic() - start_time
+            if elapsed_time > BATCH_MAX_SEC:
+                self.log_debug(f"Batch ended; >{BATCH_MAX_SEC}s elapsed")
+                break
+
+            self.log_debug(f"Waiting {batch_interval}s for more log activity...")
+            time.sleep(batch_interval)
+
+        return batch_line_count
 
     def get_tail_state_path(self, log_file_path: Path) -> Path:
         """Generate file path to use as a tail offset/cursor state file given a log file path.

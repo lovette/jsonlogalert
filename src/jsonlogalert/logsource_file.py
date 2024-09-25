@@ -47,12 +47,17 @@ class LogSourceTextFile(LogSource):
         # These are unnecessary at runtime and don't need to show up in print_conf()
         conf_del_keys(self.source_config, set(self.source_config.keys()) - FILE_SOURCE_CONFFILE_DIRECTIVES)
 
-    def tail_source(self) -> None:
-        """Tail source 'logfiles' as configured.
+    def scan_source(self) -> int:
+        """Scan source 'logfiles' once.
+
+        Returns:
+            Number of log lines scanned.
 
         Raises:
             LogAlertTailError: Tail failed.
         """
+        line_count = 0
+
         if not (self.logfiles or self.logstreams):
             logging.warning(f"Log source '{self.name}' has no logs to read")
 
@@ -63,19 +68,24 @@ class LogSourceTextFile(LogSource):
                 self.log_debug(f"Reading {len(self.logfiles)} log files")
 
             for log_file_path in self.logfiles:
-                self._tail_file(log_file_path)
+                line_count += self._scan_file(log_file_path)
 
         if self.logstreams:
             self.log_debug(f"Reading {len(self.logstreams)} file streams from command line...")
 
             for logstream in self.logstreams:
-                self.parse_stream(logstream, logstream.name)
+                line_count += self.scan_stream(logstream, logstream.name)
 
-    def _tail_file(self, log_file_path: Path) -> None:
-        """Tail a file.
+        return line_count
+
+    def _scan_file(self, log_file_path: Path) -> int:
+        """Scan a single log file.
 
         Args:
             log_file_path (Path): File path.
+
+        Returns:
+            Number of log lines scanned.
 
         Raises:
             LogAlertTailError: Tail failed.
@@ -104,7 +114,7 @@ class LogSourceTextFile(LogSource):
 
         exec_args.extend(("-f", str(log_file_path)))
 
-        self.tail_exec(tuple(exec_args))
+        return self.scan_stream_exec(tuple(exec_args))
 
     def deaggregate(self) -> List[LogSource]:
         """Return a new list of sources after deaggreating logs.

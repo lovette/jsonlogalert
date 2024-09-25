@@ -38,6 +38,7 @@ MAIN_OPTS_DIRECTIVES = {
     "print_conf",
     "print_field_types",
     "print_rules",
+    "slowroll_sec",
     "verbose",
 }
 
@@ -47,6 +48,7 @@ MAIN_OPTS_DIRECTIVES = {
 # Some may apply to sources and services.
 
 COMMAND_OPTS_DEFAULTS = {
+    "batch_interval": 0,
     "dry_run": False,
     "journal_dir": None,
     "max_logentries": 250,
@@ -77,12 +79,16 @@ COMMAND_OPTS_DEFAULTS = {
     "tail_journal_since": None,
     "tail_reset": False,
     "tail_state_dir": "/var/lib/misc",
+    "wait_sec": 0,
 }
 
 COMMAND_OPTS_DIRECTIVES = set(COMMAND_OPTS_DEFAULTS.keys())
+
+# Command line and main configuration file only
 COMMAND_OPTS_ONLY = ("sources", "services")
 
-COMMAND_OPTS_SOURCE_ONLY = set()
+# Source configuration file only
+COMMAND_OPTS_SOURCE_ONLY = {"batch_interval", "wait_sec"}
 for opt_prefix in ("journal", "tail"):
     for k in COMMAND_OPTS_DIRECTIVES:
         if k.startswith(opt_prefix):
@@ -120,6 +126,7 @@ conf_del_keys(SERVICE_CONF_DEFAULTS, COMMAND_OPTS_SOURCE_ONLY)
 
 SERVICE_CONFFILE_DIRECTIVES = set(SERVICE_CONF_DEFAULTS.keys())
 
+# Service configuration file only
 SERVICE_ONLY_DIRECTIVES = set()
 for opt_prefix in ("json_field",):
     for k in SERVICE_CONFFILE_DIRECTIVES:
@@ -148,12 +155,14 @@ conf_del_keys(SOURCE_CONF_DEFAULTS, COMMAND_OPTS_ONLY)
 
 SOURCE_CONFFILE_DIRECTIVES = set(SOURCE_CONF_DEFAULTS.keys()) - SERVICE_ONLY_DIRECTIVES
 
+# File source configuration file only
 FILE_SOURCE_ONLY_DIRECTIVES = {"logfiles", "onelog"}
 for opt_prefix in ("tail_file",):
     for k in SOURCE_CONFFILE_DIRECTIVES:
         if k.startswith(opt_prefix):
             FILE_SOURCE_ONLY_DIRECTIVES.add(k)
 
+# Journal source configuration file only
 JOURNAL_SOURCE_ONLY_DIRECTIVES = {"blob_fields"}
 for opt_prefix in ("journal", "tail_journal"):
     for k in SOURCE_CONFFILE_DIRECTIVES:

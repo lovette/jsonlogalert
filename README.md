@@ -80,6 +80,7 @@ Options specified on the command line override those in configuration files.
 | --print-rules       | Print rules and exit. |
 | --dry-run           | Run without using or updating tail offset/cursor; suppress output with `--output-devnull` |
 | --tail-reset        | Delete offset/cursor state files and exit. |
+| --slowroll          | Watch for log activity for no less than SECONDS (to satisfy rate limits.) |
 | -v, --verbose       | Be more verbose; can specify more than once. [warnings:`-v`, info:`-vv`, debug:`-vvv`] |
 | --version           | Show the version and exit. |
 | --help              | Show usage and exit. |
@@ -101,6 +102,13 @@ Options specified on the command line override those in configuration files.
 | --------- | ------------ | ----------- |
 | sources   | -s, --source | Enable only SOURCE; can specify more than once; prefix with `!` to negate; use `*` to enable all sources; valid for main configuration only. |
 | services  | --service    | Enable only SERVICE for a SOURCE; can specify more than once; prefix with `!` to negate; valid for main configuration only. |
+
+### Source options
+
+| Directive      | Command line     | Description |
+| ---------      | ------------     | ----------- |
+| wait_sec       | --wait           | Wait SECONDS before scanning (give logs time to settle.) [default: 0] |
+| batch_interval | --batch-interval | Watch for more log activity within SECONDS. [default: 0] |
 
 ### General tail options
 

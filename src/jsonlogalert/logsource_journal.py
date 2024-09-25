@@ -85,8 +85,11 @@ class LogSourceSystemdJournal(LogSource):
         # These are unnecessary at runtime and don't need to show up in print_conf()
         conf_del_keys(self.source_config, set(self.source_config.keys()) - JOURNAL_SOURCE_CONFFILE_DIRECTIVES)
 
-    def tail_source(self) -> None:
-        """Tail systemd journal as configured.
+    def scan_source(self) -> int:
+        """Scan systemd journal once.
+
+        Returns:
+            Number of log lines scanned.
 
         Raises:
             LogAlertTailError: Tail failed.
@@ -130,7 +133,7 @@ class LogSourceSystemdJournal(LogSource):
         if self.journal_dir:
             exec_args.extend(("-D", str(self.journal_dir)))
 
-        self.tail_exec(tuple(exec_args))
+        return self.scan_stream_exec(tuple(exec_args))
 
     def apply_field_converters(self, rawfields: dict, log_line: str) -> None:
         """Convert field values to native types using `self.field_converters`.
