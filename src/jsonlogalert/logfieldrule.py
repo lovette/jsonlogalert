@@ -143,7 +143,7 @@ class FieldRule:
             elif rule_op.endswith("^"):
                 rule_cls = FieldRuleRegexMatch if single_value else FieldRuleRegexMatchList
                 field_rule = rule_cls(rule_op, rule_values)
-            elif rule_op.endswith("="):
+            elif rule_op.endswith(("!", "=")):
                 rule_cls = FieldRuleOperator if single_value else FieldRuleInSet
                 field_rule = rule_cls(rule_op, rule_values)
             else:
