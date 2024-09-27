@@ -160,11 +160,17 @@ class LogAlertOutputToSMTP(LogAlertOutput):
         Args:
             email (MIMEText): Message
         """
+        service = self.service
+        source = service.source
+        logfiles = getattr(source, "logfiles", None)
+
         email["From"] = formataddr((self.sender_name or "", self.sender_addr))
         email["To"] = formataddr((self.rcpt_name or "", self.rcpt_addr))
-        email["Subject"] = self.service.render_template_str(self.subject)
+        email["Subject"] = service.render_template_str(self.subject)
 
         email["X-JsonLogAlert-Date"] = datetime.now(tz=timezone.utc).isoformat()
-        email["X-JsonLogAlert-Host"] = self.service.source.hostfqdn
-        email["X-JsonLogAlert-Source"] = self.service.source.name
-        email["X-JsonLogAlert-Service"] = self.service.name
+        email["X-JsonLogAlert-Host"] = source.hostfqdn
+        email["X-JsonLogAlert-Service"] = service.fullbasename
+
+        if logfiles:
+            email["X-JsonLogAlert-Logfiles"] = ";".join(logfiles)

@@ -108,15 +108,21 @@ class LogService:
 
     @property  # Cannot be a cached_property because name changes after deaggregate()
     def fullname(self) -> str:
-        """Source/service name.
+        """Source/service name with replica index suffix.
 
         Returns:
             str
         """
-        # We're not comparing with 'source.name' because it may have a 'replica_index' suffix
-        if self.name == self.source.source_dir.name:
-            return self.source.name
-        return f"{self.source.name}/{self.name}"
+        return self.source.name if self.name == self.source.basename else f"{self.source.name}/{self.name}"
+
+    @cached_property
+    def fullbasename(self) -> str:
+        """Source/service name without replica index suffix.
+
+        Returns:
+            str
+        """
+        return self.source.basename if self.name == self.source.basename else f"{self.source.basename}/{self.name}"
 
     @cached_property
     def enabled(self) -> bool:

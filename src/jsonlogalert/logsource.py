@@ -109,6 +109,15 @@ class LogSource:
 
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'")
 
+    @cached_property
+    def basename(self) -> str:
+        """Source base name.
+
+        Returns:
+            str
+        """
+        return self.source_dir.name
+
     # Cannot be a cached_property because name changes after deaggregate()
     @property
     def name(self) -> str:
@@ -117,9 +126,7 @@ class LogSource:
         Returns:
             str
         """
-        if self.replica_index is not None:
-            return f"{self.source_dir.name}[{self.replica_index}]"
-        return self.source_dir.name
+        return self.basename if self.replica_index is None else f"{self.basename}[{self.replica_index}]"
 
     @cached_property
     def enabled(self) -> bool:
