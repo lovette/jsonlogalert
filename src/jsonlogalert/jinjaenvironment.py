@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from jsonlogalert.logentry import LogEntry
 
-from jinja2 import Environment, FileSystemLoader, pass_context, pass_eval_context
+from jinja2 import BaseLoader, Environment, FileSystemLoader, pass_context, pass_eval_context
 from markupsafe import Markup, escape
 from minify_html import minify
 
@@ -210,3 +210,15 @@ class LogAlertJinjaEnvironment(Environment):
         self.filters["format_time"] = _jinja_format_time
 
         self.globals["logentries_groupby"] = _jinja_logentries_groupby
+
+
+######################################################################
+# LogAlertJinjaStringEnvironment
+
+
+class LogAlertJinjaStringEnvironment(Environment):
+    """Custom Jinja Environment for SMTP messages."""
+
+    def __init__(self) -> None:
+        """Constructor."""
+        super().__init__(loader=BaseLoader())

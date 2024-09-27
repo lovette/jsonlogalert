@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -42,6 +43,11 @@ BATCH_MAX_SEC = 50  # just shy of one minute seems good
 
 class LogSource:
     """Log source object."""
+
+    # Shared among all sources
+    hostname = None
+    hostfqdn = None
+    hostdomain = None
 
     def __init__(self, source_dir: Path, source_config: dict[str, Any]) -> None:
         """Constructor.
@@ -207,6 +213,16 @@ class LogSource:
             cli_config (dict): Command line configuration options.
             default_config (dict): Default configuration options.
         """
+        # We do this once here so we fail early
+        if LogSource.hostname is None:
+            try:
+                LogSource.hostname = socket.gethostname()
+                LogSource.hostfqdn = socket.getfqdn() or LogSource.hostname
+            except OSError as err:
+                raise LogAlertConfigError(err) from err
+            else:
+                LogSource.hostdomain = LogSource.hostfqdn.replace(f"{LogSource.hostname}.", "", 1) or LogSource.hostname
+
         # Sanity check configuration settings (it's easy to get confused what option goes where!)
         source_conf_check(self)
 
@@ -531,6 +547,9 @@ class LogSource:
 
     def validate_conf(self) -> None:
         """Review source configuration directives and see if they make sense."""
+        if not self.hostname:
+            self.config_error("Failed to resolve hostname.")
+
         if not self.message_field_default:
             self.config_error("'message_field' directive is not set.")
 

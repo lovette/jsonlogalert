@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from click import echo
-from jinja2 import Template, TemplateNotFound
+from jinja2 import TemplateNotFound
 
 from jsonlogalert.exceptions import LogAlertConfigError
 from jsonlogalert.jinjaenvironment import LogAlertJinjaEnvironment
@@ -39,7 +39,7 @@ class LogAlertOutput:
         )
 
         self.jinja_env = LogAlertJinjaEnvironment(template_dirs, self.output_template_minify_html)
-        self.jinja_template: Template = None
+        self.jinja_template = None
 
     def __getattr__(self, key: str) -> str | None:
         """Return output config field value using attribute notation.
@@ -139,15 +139,9 @@ class LogAlertOutput:
         if not self.jinja_template:
             self.load_template()
 
-        template_vars = {
-            "logservice": self.service,
-            "logsource": self.service.source,
-            "logentries": self.service.logentries,
-        }
-
         self.log_debug(f"Output template is '{self.jinja_template.filename}'")
 
-        return self.jinja_template.render(**template_vars)
+        return self.service.render_template(self.jinja_template)
 
     def log_debug(self, message: str) -> None:
         """Log a debug message related to this output.

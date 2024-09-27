@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from email.utils import formataddr, parseaddr
 from functools import cached_property
 from pathlib import Path
 from types import SimpleNamespace
@@ -12,6 +13,8 @@ if TYPE_CHECKING:
     from collections import List
     from collections.abc import Sequence
 
+    from jinja2 import Template
+
     from jsonlogalert.logentry import LogEntry
     from jsonlogalert.logsource import LogSource
 
@@ -19,6 +22,7 @@ from click import echo
 
 from jsonlogalert.confcheck import SERVICE_CONF_DEFAULTS, service_conf_check, service_conf_clean
 from jsonlogalert.exceptions import LogAlertConfigError, LogAlertParserError
+from jsonlogalert.jinjaenvironment import LogAlertJinjaStringEnvironment
 from jsonlogalert.logalertoutput import LogAlertOutput, LogAlertOutputToDevNull, LogAlertOutputToStdout
 from jsonlogalert.logalertoutput_file import LogAlertOutputToFile
 from jsonlogalert.logalertoutput_smtp import LogAlertOutputToSMTP
@@ -283,6 +287,12 @@ class LogService:
         self.pass_rules = self._build_rules(self.pass_rules_path)
         self.drop_rules = self._build_rules(self.drop_rules_path)
 
+        # Expand and validate "output_smtp" addresses
+        for opt in ("output_smtp_rcpt", "output_smtp_rcpt_name", "output_smtp_sender", "output_smtp_sender_name"):
+            val = self.service_config.get(opt)
+            if val:
+                self.service_config[opt] = self.render_template_str(val)
+
         self.validate_conf()
 
     def print_rules(self) -> None:
@@ -523,6 +533,17 @@ class LogService:
 
     def validate_conf(self) -> None:
         """Review service rules and see if they make sense."""
+
+        def _validate_smtp_addr(config_opt: str, name_addr: tuple[str, str]) -> None:
+            # Sanity check address by seeing if we can parse it and get the same result
+            rfc_addr = formataddr(name_addr)
+            if parseaddr(rfc_addr) != name_addr:
+                self.config_error(f"{config_opt}: Malformed address: '{rfc_addr}'")
+
+        if self.output_smtp_rcpt and self.output_smtp:
+            _validate_smtp_addr("output_smtp_sender", (self.output_smtp_sender_name or "", self.output_smtp_sender))
+            _validate_smtp_addr("output_smtp_rcpt", (self.output_smtp_rcpt_name or "", self.output_smtp_rcpt))
+
         if self.capture_fields and self.ignore_fields:
             self.log_warning("Both 'capture_fields' and 'ignore_fields' are set; only 'capture_fields' will be used.")
 
@@ -672,6 +693,48 @@ class LogService:
             bool
         """
         return not bool(self.select_rules or self.drop_rules)
+
+    def render_template(self, template: Template) -> str:
+        """Render content for service output.
+
+        Args:
+            template (Template): Jinja template.
+
+        Returns:
+            str
+        """
+        template_vars = {
+            "service": self,
+            "logservice": self,
+            "source": self.source,
+            "logsource": self.source,
+            "entries": self.logentries,
+            "logentries": self.logentries,
+            "hostname": self.source.hostname,
+            "hostdomain": self.source.hostdomain,
+            "hostfqdn": self.source.hostfqdn,
+        }
+
+        return template.render(**template_vars)
+
+    def render_template_str(self, template_str: str, one_line: bool = True) -> str:
+        """Render given string template as an output template.
+
+        Args:
+            template_str (str): Template string.
+            one_line (bool, optional): True if result should be a single line. Defaults to True.
+
+        Returns:
+            str
+        """
+        if "{" in template_str:
+            template = LogAlertJinjaStringEnvironment().from_string(template_str)
+            template_str = self.render_template(template)
+            if one_line:
+                # Remove newlines, tabs, strings of spaces, etc.
+                template_str = re.sub(r"\s+", " ", template_str).strip()
+
+        return template_str
 
     ######################################################################
     # Helper functions

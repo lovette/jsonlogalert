@@ -69,4 +69,4 @@ max_logentries: 250
 output_template_file: "email.jinja-html"
 output_content_type: "html"
 output_template_minify_html: True
-output_smtp_subject: "Unusual %SERVICEDESC% activity"
+output_smtp_subject: "Unusual {{service.description}} activity"

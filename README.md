@@ -192,7 +192,7 @@ These options apply to both sources and [services](#services):
 
 | Directive                   | Type   | Description |
 | -------                     | ----   | ----------- |
-| description                 | string | Service description; can reference in SMTP subject as `%SERVICEDESC%` [default: none] |
+| description                 | string | Service description [default: none] |
 | enabled                     | int    | Whether the source should be scanned by default. [default: 1] |
 | capture_fields              | list   | Set of fields to capture and made available to templates; takes precedence over `ignore_fields`; merged with service directive. [default: none] |
 | ignore_fields               | list   | Set of fields to not capture, all others are available to templates; merged with service directive. [default: none] |
@@ -405,7 +405,7 @@ If `output_stdout` is enabled, the SMTP message will be output to stdout, which 
 | output_smtp_sender        | --output-smtp-sender        | Email sender address. [default: recipient address] |
 | output_smtp_rcpt_name     | --output-smtp-rcpt-name     | Email recipient name. [default: none] |
 | output_smtp_sender_name   | --output-smtp-sender-name   | Email sender name. [default: recipient name] |
-| output_smtp_subject       | --output-smtp-subject       | Email subject line. [default: "Unusual activity for %SERVICEDESC%"] |
+| output_smtp_subject       | --output-smtp-subject       | Email subject line. [default: "Unusual activity for {{service.description}}"] |
 | output_smtp_host          | --output-smtp-host          | Mail server hostname or address. [default: localhost] |
 | output_smtp_port          | --output-smtp-port          | Mail server port. [default: 25] |
 | output_smtp_auth_ssl      | --output-smtp-auth-ssl      | Mail server uses SSL connection. [default: no] |
@@ -413,14 +413,9 @@ If `output_stdout` is enabled, the SMTP message will be output to stdout, which 
 | output_smtp_auth_username | --output-smtp-auth-username | Mail server authentication username. [default: none] |
 | output_smtp_auth_password | --output-smtp-auth-password | Mail server authentication password. [default: none] |
 
-The sender, recipient and subject options can contain placeholders to be replaced when each message is composed.
+The sender, recipient and subject options can be Jinja [templates](#templates) that reference runtime context variables.
+The subject is expanded when each message is composed.
 
-| Placeholder    | Value                    |
-| -----------    | -----                    |
-| %HOSTNAME%     | Host name.               |
-| %SOURCENAME%   | Log source name.         |
-| %SERVICENAME%  | Log service name.        |
-| %SERVICEDESC%  | Log service description. |
 
 ## Templates
 
@@ -520,9 +515,12 @@ Templates access details about log entries, their source and service using templ
 
 | Variable   | Description |
 | -------    | ----------- |
-| logentries | List of log entries. |
-| logservice | The service. |
-| logsource  | The source. |
+| entries    | List of log entries. |
+| source     | The source. |
+| service    | The service. |
+| hostname   | The server hostname. |
+| hostdomain | The server domain (or 'hostname' if unavailable.) |
+| hostfqdn   | The server fully qualified hostname (or 'hostname' if unavailable.) |
 
 ### Template functions
 

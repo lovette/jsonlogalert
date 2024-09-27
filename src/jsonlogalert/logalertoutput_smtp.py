@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import platform
 import ssl
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
@@ -16,7 +15,7 @@ from jsonlogalert.logalertoutput import LogAlertOutput
 if TYPE_CHECKING:
     from jsonlogalert.logservice import LogService
 
-SMTP_SUBJECT_DEFAULT = "Unusual activity for %SERVICEDESC%"
+SMTP_SUBJECT_DEFAULT = "Unusual activity for {{service.description}}"
 
 
 ######################################################################
@@ -161,30 +160,11 @@ class LogAlertOutputToSMTP(LogAlertOutput):
         Args:
             email (MIMEText): Message
         """
-
-        def _replace_multi(s: str, d: dict[str, str]) -> str:
-            if s:
-                for k, v in d.items():
-                    s = s.replace(k, v)
-            return s
-
-        hostname = platform.node()
-
-        placeholders = {
-            "%HOSTNAME%": hostname,
-            "%SOURCENAME%": self.service.source.name,
-            "%SERVICENAME%": self.service.name,
-            "%SERVICEDESC%": self.service.description,
-        }
-
-        sender_name = _replace_multi(self.sender_name, placeholders)
-        rcpt_name = _replace_multi(self.rcpt_name, placeholders)
-
-        email["From"] = formataddr((sender_name, self.sender_addr)) if sender_name else self.sender_addr
-        email["To"] = formataddr((rcpt_name, self.rcpt_addr)) if rcpt_name else self.rcpt_addr
-        email["Subject"] = _replace_multi(self.subject, placeholders)
+        email["From"] = formataddr((self.sender_name or "", self.sender_addr))
+        email["To"] = formataddr((self.rcpt_name or "", self.rcpt_addr))
+        email["Subject"] = self.service.render_template_str(self.subject)
 
         email["X-JsonLogAlert-Date"] = datetime.now(tz=timezone.utc).isoformat()
-        email["X-JsonLogAlert-Host"] = hostname
+        email["X-JsonLogAlert-Host"] = self.service.source.hostfqdn
         email["X-JsonLogAlert-Source"] = self.service.source.name
         email["X-JsonLogAlert-Service"] = self.service.name
