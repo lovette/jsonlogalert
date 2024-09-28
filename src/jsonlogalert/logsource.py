@@ -227,8 +227,11 @@ class LogSource:
                 LogSource.hostfqdn = socket.getfqdn() or LogSource.hostname
             except OSError as err:
                 raise LogAlertConfigError(err) from err
-            else:
-                LogSource.hostdomain = LogSource.hostfqdn.replace(f"{LogSource.hostname}.", "", 1) or LogSource.hostname
+
+            LogSource.hostdomain = LogSource.hostfqdn.replace(f"{LogSource.hostname}.", "", 1) or LogSource.hostname
+
+            if LogSource.hostfqdn == LogSource.hostname:
+                logging.info(f"Hostname and FQDN are both '{LogSource.hostname}'")
 
         # Sanity check configuration settings (it's easy to get confused what option goes where!)
         source_conf_check(self)
