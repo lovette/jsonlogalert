@@ -514,7 +514,7 @@ class FieldRuleHasField(FieldRule):
 # FieldRuleInSet
 
 
-class FieldRuleInSet(FieldRuleOperatorList):
+class FieldRuleInSet(FieldRule):
     """Field rule that evaluates whether a field value is in a set of values."""
 
     def __init__(self, rule_op: str, rule_values: Sequence) -> None:
@@ -528,10 +528,14 @@ class FieldRuleInSet(FieldRuleOperatorList):
 
         assert self.rule_op == "="
 
-        self.value_set = set(self.rule_value)
-
-        if len(self.value_set) < 2:  # noqa: PLR2004
+        if not self.rule_value:
+            raise FieldRuleError("operator 'in set' requires a value.")
+        if self.rule_value[0] is None or self.rule_value[0] == "":
+            raise FieldRuleError("operator 'in set' requires a non-empty value.")
+        if len(self.rule_value) < 2:  # noqa: PLR2004
             raise FieldRuleError("operator 'in set' requires more than one value.")
+
+        self.value_set = set(self.rule_value)
 
     def __repr__(self) -> str:
         """String representation of object.
