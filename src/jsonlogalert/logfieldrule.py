@@ -16,6 +16,8 @@ _RULE_OPERATORS = {
     "<": operator.lt,
     ">=": operator.ge,
     "<=": operator.le,
+    "<>": None,
+    "<=>": None,
     "^": None,
     "!^": None,
     "~": None,
@@ -126,7 +128,7 @@ class FieldRule:
         if not rules_config:
             return None
 
-        def _build_field_rules(rule_op: str, rule_values: list) -> FieldRule:
+        def _get_field_rule_op(rule_op: str, rule_values: list) -> FieldRule:
             """Build rule for an individual field."""
             assert isinstance(rule_values, Sequence)
 
@@ -134,9 +136,9 @@ class FieldRule:
 
             if rule_op.endswith("*"):
                 field_rule = FieldRuleHasField(rule_op, rule_values)
-            elif rule_op[0] in (">", "<"):
+            elif rule_op.startswith((">", "<")):
                 FieldRule.cast_values_scalar(rule_values)
-                field_rule = FieldRuleOperator(rule_op, rule_values)
+                field_rule = FieldRuleOperator(rule_op, rule_values) if len(rule_op) == 1 else FieldRuleBetween(rule_op, rule_values)
             elif rule_op.endswith("~"):
                 rule_cls = FieldRuleRegexSearch if single_value else FieldRuleRegexSearchList
                 field_rule = rule_cls(rule_op, rule_values)
@@ -181,7 +183,7 @@ class FieldRule:
                     rule_op = "="
 
                 try:
-                    field_fns[rule_field] = _build_field_rules(rule_op, rule_op_value)
+                    field_fns[rule_field] = _get_field_rule_op(rule_op, rule_op_value)
                 except FieldRuleError as err:
                     raise FieldRuleError(f"{rule_field}: {err}") from err
 
@@ -558,3 +560,49 @@ class FieldRuleInSet(FieldRuleOperatorList):
         """
         found_match = args[0] in self.value_set
         return not found_match if self.rule_negate else found_match
+
+
+######################################################################
+# FieldRuleBetween
+
+
+class FieldRuleBetween(FieldRule):
+    """Field rule that evaluates whether a numeric field value is between a set of values."""
+
+    def __init__(self, rule_op: str, rule_values: Sequence) -> None:
+        """Constructor.
+
+        Args:
+            rule_op (str): Rule operator.
+            rule_values (Sequence): List of values; only the first is used.
+        """
+        super().__init__(rule_op, rule_values)
+
+        if len(self.rule_value) != 2:  # noqa: PLR2004
+            raise FieldRuleError(f"operator '{self.rule_op}' requires two values.")
+
+    def __str__(self) -> str:
+        """Return string representation of an object used in print().
+
+        Returns:
+            str
+        """
+        if self.rule_op == "<>":
+            ops = (">", "<")
+        elif self.rule_op == "<=>":
+            ops = (">=", "<=")
+
+        return f"{ops[0]}{self.rule_value[0]} AND {ops[1]}{self.rule_value[1]}"
+
+    def __call__(self, *args, **kwds) -> bool:  # noqa: ARG002
+        """Evaluate rule.
+
+        Returns:
+            bool: True if rule matches.
+        """
+        if self.rule_op == "<>":
+            op = operator.lt
+        elif self.rule_op == "<=>":
+            op = operator.le
+
+        return op(self.rule_value[0], args[0]) and op(args[0], self.rule_value[1])

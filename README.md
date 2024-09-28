@@ -351,6 +351,8 @@ JSON:
 | >=       | Greater than or equal (scalar value) |
 | <        | Less than (scalar value) |
 | <=       | Less than or equal (scalar value) |
+| <>       | Between, exclusive (scalar value) |
+| <=>      | Between, inclusive (scalar value) |
 | ^        | Regular expression match from beginning of string |
 | ~        | Regular expression search |
 | *        | Field is set (to any value) |
