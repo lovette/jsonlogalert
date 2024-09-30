@@ -180,6 +180,15 @@ class LogSource:
         return self.source_config.get("promote_fields") or None
 
     @cached_property
+    def rename_fields(self) -> dict | None:
+        """Dictionary of fields to rename.
+
+        Returns:
+            dict
+        """
+        return self.source_config.get("rename_fields") or None
+
+    @cached_property
     def source_parser_path(self) -> Path:
         """Path to source parser module.
 
@@ -447,7 +456,7 @@ class LogSource:
 
         return fields
 
-    def apply_field_converters(self, rawfields: dict, log_line: str) -> None:
+    def apply_field_converters(self, rawfields: dict, log_line: str) -> None:  # noqa: C901
         """Convert field values to native types using `self.field_converters`.
 
         Args:
@@ -466,6 +475,12 @@ class LogSource:
                         promote_dict = {f"{field}_{k}": v for k, v in promote_dict.items()}
                         del rawfields[field]
                         rawfields.update(promote_dict)
+
+        if self.rename_fields:
+            for field, new_field in self.rename_fields.items():
+                if field in rawfields:
+                    rawfields[new_field] = rawfields[field]
+                    del rawfields[field]
 
         # Convert fields to native types
         if self.field_converters:
