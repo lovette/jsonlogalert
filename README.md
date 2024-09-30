@@ -215,7 +215,7 @@ These options apply only to sources:
 | -------                     | ----   | ----------- |
 | message_field               | string | Log entry field that is the event message. [default: "MESSAGE"] |
 | timestamp_field             | string | Log entry field that is the event timestamp. [default: "TIMESTAMP"] |
-| timestamp_field_format      | string | Parse `timestamp_field` field values according to this format; see [datetime.strptime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) for format codes. [default: none] |
+| timestamp_field_format      | string | Parse `timestamp_field` field values according to this format; use "iso" to parse as any valid ISO 8601 format; see [datetime.strptime](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) for format codes and [datetime.fromisoformat](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) for ISO formats. [default: none] |
 | promote_fields              | list   | Set of JSON dictionary fields to promote up a level; valid only for JSON logs; applied one after the other so nested dictionaries can be promoted; applied prior to rule evaluations. [default: none] |
 
 ### Journal options

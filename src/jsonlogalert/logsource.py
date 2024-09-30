@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import socket
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -35,6 +36,9 @@ TIMESTAMP_FIELD_DEFAULT = "TIMESTAMP"
 MESSAGE_FIELD_DEFAULT = "MESSAGE"
 DEFAULT_BLOB_FIELDS = {MESSAGE_FIELD_DEFAULT}
 BATCH_MAX_SEC = 50  # just shy of one minute seems good
+
+# Capture first 6 digits of milliseconds in ISO 8061 timestamp
+RE_6DIGITMS = re.compile(r"(\.\d{6})\d+")
 
 
 ######################################################################
@@ -251,7 +255,13 @@ class LogSource:
         if self.timestamp_field_format:
             if self.timestamp_field in self.source_parser.field_converters:
                 self.config_error(f"'{self.timestamp_field}': Field converter already set; 'timestamp_field_format' cannot be applied.")
-            self.source_parser.field_converters[self.timestamp_field] = lambda ts: datetime.strptime(ts, self.timestamp_field_format)  # noqa: DTZ007
+
+            if self.timestamp_field_format == "iso":
+                ts_func = LogSource.fromisoformat if sys.version_info < (3, 11, 0) else datetime.fromisoformat
+            else:
+                ts_func = lambda ts: datetime.strptime(ts, self.timestamp_field_format)  # noqa: DTZ007, E731
+
+            self.source_parser.field_converters[self.timestamp_field] = ts_func
 
         self.services = LogService.load_services(self, cli_config)
 
@@ -911,3 +921,25 @@ class LogSource:
                 found_services = tuple(s for s in source.services if s.name == service_name)
                 if not found_services:
                     raise LogAlertConfigError(f"{source.name}/{service_name}: No such service")
+
+    @staticmethod
+    def fromisoformat(date_string: str) -> datetime:
+        """Return a datetime corresponding to a date_string in any valid ISO 8601 format.
+
+        Used for Python versions prior to 3.11 when the formats it suppors were expanded.
+
+        Args:
+            date_string (str): Timestamp in ISO format.
+
+        Returns:
+            datetime
+        """
+        if date_string.endswith("Z"):
+            # fromisoformat does support "Z" time zone specifier
+            date_string = date_string.removesuffix("Z") + "+00:00"
+
+        if "." in date_string:
+            # strptime requires 6 digit milliseconds
+            date_string = RE_6DIGITMS.sub(r"\1", date_string)
+
+        return datetime.fromisoformat(date_string)
