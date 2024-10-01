@@ -3,7 +3,7 @@ from __future__ import annotations
 import ssl
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
-from email.utils import formataddr
+from email.utils import formataddr, make_msgid
 from functools import cached_property
 from smtplib import SMTP, SMTP_SSL, SMTPException
 from typing import TYPE_CHECKING
@@ -167,6 +167,7 @@ class LogAlertOutputToSMTP(LogAlertOutput):
         email["From"] = formataddr((self.sender_name or "", self.sender_addr))
         email["To"] = formataddr((self.rcpt_name or "", self.rcpt_addr))
         email["Subject"] = service.render_template_str(self.subject)
+        email["Message-Id"] = make_msgid("jsonlogalert", domain=source.hostdomain)
 
         email["X-JsonLogAlert-Date"] = datetime.now(tz=timezone.utc).isoformat()
         email["X-JsonLogAlert-Host"] = source.hostfqdn
