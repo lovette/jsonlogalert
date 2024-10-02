@@ -37,8 +37,8 @@ MESSAGE_FIELD_DEFAULT = "MESSAGE"
 DEFAULT_BLOB_FIELDS = {MESSAGE_FIELD_DEFAULT}
 BATCH_MAX_SEC = 50  # just shy of one minute seems good
 
-# Capture first 6 digits of milliseconds in ISO 8061 timestamp
-RE_6DIGITMS = re.compile(r"(\.\d{6})\d+")
+# Capture microseconds in ISO 8061 timestamp
+RE_TIMESTAMP_MICRO = re.compile(r"\.(\d{4,})")
 
 
 ######################################################################
@@ -950,11 +950,21 @@ class LogSource:
             datetime
         """
         if date_string.endswith("Z"):
-            # fromisoformat does support "Z" time zone specifier
+            # fromisoformat does support "Z" time zone specifier until 3.11
             date_string = date_string.removesuffix("Z") + "+00:00"
 
-        if "." in date_string:
-            # strptime requires 6 digit milliseconds
-            date_string = RE_6DIGITMS.sub(r"\1", date_string)
+        try:
+            return datetime.fromisoformat(date_string)
+        except ValueError:
+            pass
 
+        def _fix_micro(m: re.Match) -> str:
+            micro = m.group(1)[:6].rjust(6, "0")
+            return f".{micro}"
+
+        # fromisoformat (and strptime %f) requires 6 digit microseconds.
+        # I've seen timestamps with 5 and 9 digit microseconds.
+        date_string = RE_TIMESTAMP_MICRO.sub(_fix_micro, date_string)
+
+        # If this fails, scan_stream will catch and report exception
         return datetime.fromisoformat(date_string)
