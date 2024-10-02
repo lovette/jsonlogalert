@@ -506,6 +506,27 @@ def _override_output_opts(cli_config: dict) -> None:
     default=False,
     help="Skip drop rules.",
 )
+@optgroup.option(
+    "--skip-capture-fields",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Capture all fields.",
+)
+@optgroup.option(
+    "--skip-conceal-fields",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Do not conceal fields.",
+)
+@optgroup.option(
+    "--skip-ignore-fields",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Do not ignore fields.",
+)
 @click.argument(
     "log_file_streams",
     type=click.File("r"),
@@ -542,8 +563,11 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
     print_field_types: bool,
     print_rules: bool,
     services: tuple[str],  ## noqa: ARG001
-    slowroll_sec: int,
+    skip_capture_fields: bool,  ## noqa: ARG001
+    skip_conceal_fields: bool,  ## noqa: ARG001
     skip_drop_rules: bool,  ## noqa: ARG001
+    skip_ignore_fields: bool,  ## noqa: ARG001
+    slowroll_sec: int,
     sources: tuple[str],  ## noqa: ARG001
     tail_dryrun: bool,  ## noqa: ARG001
     tail_file_bin: Path,  ## noqa: ARG001

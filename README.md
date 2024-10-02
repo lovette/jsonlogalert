@@ -112,9 +112,12 @@ Options specified on the command line override those in configuration files.
 
 ### Service options
 
-| Directive       | Command line      | Description |
-| ---------       | ------------      | ----------- |
-| skip_drop_rules | --skip-drop-rules | Skip drop rules. |
+| Directive           | Command line          | Description |
+| ---------           | ------------          | ----------- |
+| skip_drop_rules     | --skip-drop-rules     | Skip drop rules. |
+| skip_capture_fields | --skip-capture-fields | Capture all fields. |
+| skip_conceal_fields | --skip-conceal-fields | Do not conceal fields. |
+| skip_ignore_fields  | --skip-ignore-fields  | Do not ignore fields. |
 
 ### General tail options
 

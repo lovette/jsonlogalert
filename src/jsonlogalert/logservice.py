@@ -365,14 +365,14 @@ class LogService:
             return True
 
         # Capture/ignore fields as configured
-        capture_fields = self.capture_fields
-        if not capture_fields and self.ignore_fields:
+        capture_fields = self.capture_fields if not self.skip_capture_fields else None
+        if not capture_fields and self.ignore_fields and not self.skip_ignore_fields:
             capture_fields = set(rawfields.keys()) - self.ignore_fields
         if capture_fields:
             rawfields = {k: rawfields.get(k) for k in capture_fields}
 
         log_entry.rawfields = rawfields
-        log_entry.conceal_fields = self.conceal_fields
+        log_entry.conceal_fields = self.conceal_fields if not self.skip_conceal_fields else None
 
         self.logentries.append(log_entry)
 
