@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from jsonlogalert.confcheck import FILE_SOURCE_CONFFILE_DIRECTIVES, conf_del_keys
+from jsonlogalert.exceptions import LogAlertParserError
 from jsonlogalert.logsource import LogSource
 
 ######################################################################
@@ -115,6 +116,43 @@ class LogSourceTextFile(LogSource):
         exec_args.extend(("-f", str(log_file_path)))
 
         return self.scan_stream_exec(tuple(exec_args))
+
+    def parse_line(self, log_line: str) -> dict:
+        """Parse source log entry into a dict of structured fields.
+
+        Args:
+            log_line (str): Log entry from source.
+
+        Raises:
+            LogAlertParserError: Parse failed.
+
+        Returns:
+            dict
+        """
+        fields = None
+
+        try:
+            fields = super().parse_line(log_line)
+        except LogAlertParserError:
+            # logtail2 outputs a warning when a log file has been rotated
+            # and has the same inode but is smaller in size.
+            #
+            # > ***************
+            # > *** WARNING ***: Log file $logfile is smaller than last time checked!
+            # > *************** This could indicate tampering.
+            #
+            # This occurs naturally for some logs such as when podman is logging events to file
+            # and rotates it by deleting the first half of the file.
+
+            if log_line.startswith("***"):
+                fields = {
+                    "MESSAGE": log_line,
+                    "LOGTAIL2_WARNING": 1,
+                }
+            else:
+                raise
+
+        return fields
 
     def deaggregate(self) -> List[LogSource]:
         """Return a new list of sources after deaggreating logs.
