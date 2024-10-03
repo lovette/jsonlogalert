@@ -676,6 +676,10 @@ def cli(  # noqa: C901, PLR0912, PLR0913, PLR0915
         if log_file_streams:
             file_sources[0].setlogstreams(log_file_streams)
 
+    # Validate scan runtime options
+    for log_source in log_sources:
+        log_source.validate_scan()
+
     # Deaggregate sources that need to be
     new_sources = []
     for log_source in log_sources:

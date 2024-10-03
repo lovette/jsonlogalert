@@ -581,7 +581,11 @@ class LogSource:
             log_service.reset(self)
 
     def validate_conf(self) -> None:
-        """Review source configuration directives and see if they make sense."""
+        """Review source configuration directives and see if they make sense.
+
+        Raises:
+            LogAlertConfigError
+        """
         if not self.hostname:
             self.config_error("Failed to resolve hostname.")
 
@@ -593,14 +597,24 @@ class LogSource:
 
         if not self.tail_state_dir:
             self.config_error("'tail_state_dir' directive is not set.")
+
+        catchalls = [service.name for service in self.services if service.is_catchall]
+        if len(catchalls) > 1:
+            self.config_error(f"{len(catchalls)} services are configured to claim all log entries: [{', '.join(catchalls)}]")
+
+    def validate_scan(self) -> None:
+        """Review scan configuration directives and see if they make sense.
+
+        Raises:
+            LogAlertConfigError
+        """
         if not self.tail_state_dir.is_dir():
             self.config_error(f"'{self.tail_state_dir}': No such directory")
         if not os.access(self.tail_state_dir, os.W_OK | os.X_OK):
             self.config_error(f"'tail_state_dir' '{self.tail_state_dir}' requires write permission")
 
-        catchalls = [service.name for service in self.services if service.is_catchall]
-        if len(catchalls) > 1:
-            self.config_error(f"{len(catchalls)} services are configured to claim all log entries: [{', '.join(catchalls)}]")
+        for log_service in self.services:
+            log_service.validate_scan()
 
     def force_enable(self) -> None:
         """Enable source and all it's services."""

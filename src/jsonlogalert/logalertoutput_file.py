@@ -76,6 +76,14 @@ class LogAlertOutputToFile(LogAlertOutput):
         if not self.output_file_dir:
             self.config_error("Cannot save output", "'output_file_dir' is not set.")
 
+    def validate_scan(self) -> None:
+        """Review scan configuration directives and see if they make sense.
+
+        Raises:
+            LogAlertConfigError
+        """
+        super().validate_scan()
+
         if not self.output_file_dir.is_dir():
             self.config_error("Cannot save output", f"{self.output_file_dir}: No such directory")
 

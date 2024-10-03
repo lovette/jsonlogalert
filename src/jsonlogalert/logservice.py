@@ -538,7 +538,11 @@ class LogService:
         self.logentries = []
 
     def validate_conf(self) -> None:
-        """Review service rules and see if they make sense."""
+        """Review service rules and see if they make sense.
+
+        Raises:
+            LogAlertConfigError
+        """
 
         def _validate_smtp_addr(config_opt: str, name_addr: tuple[str, str]) -> None:
             # Sanity check address by seeing if we can parse it and get the same result
@@ -562,6 +566,15 @@ class LogService:
         # Check output configurations now, prior to tailing sources
         for output in self._create_outputs():
             output.validate_conf()
+
+    def validate_scan(self) -> None:
+        """Review scan configuration directives and see if they make sense.
+
+        Raises:
+            LogAlertConfigError
+        """
+        for output in self._create_outputs():
+            output.validate_scan()
 
     def _create_outputs(self) -> tuple[LogAlertOutput]:
         """Create outputs based on service configuration.

@@ -112,9 +112,20 @@ class LogAlertOutput:
         return output_content_type
 
     def validate_conf(self) -> None:
-        """Valiate output configuration properties."""
+        """Valiate output configuration properties.
+
+        Raises:
+            LogAlertConfigError
+        """
         # Load template to validate file paths
         self.load_template()
+
+    def validate_scan(self) -> None:
+        """Review output scan configuration directives and see if they make sense.
+
+        Raises:
+            LogAlertConfigError
+        """
 
     def load_template(self) -> None:
         """Load template.
