@@ -791,8 +791,18 @@ class LogSource:
 
         sources: list[LogSource] = []
 
-        include_sources, exclude_sources = LogSource._include_exclude_list(cli_config.get("sources") or default_config.get("sources"))
-        include_services, exclude_services = LogSource._include_exclude_list(cli_config.get("services") or default_config.get("services"))
+        source_names = list(cli_config.get("sources") or default_config.get("sources") or [])
+        service_names = list(cli_config.get("services") or default_config.get("services") or [])
+
+        # Handle "--source source/service"
+        for i, source_and_service in enumerate(source_names):
+            if "/" in source_and_service:
+                source_name, service_name = source_and_service.split("/", 1)
+                source_names[i] = source_name
+                service_names.append(service_name)
+
+        include_sources, exclude_sources = LogSource._include_exclude_list(source_names)
+        include_services, exclude_services = LogSource._include_exclude_list(service_names)
 
         source_dirs = sorted(d for d in config_dir.iterdir() if d.is_dir())
         if not source_dirs:

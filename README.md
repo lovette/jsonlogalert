@@ -100,7 +100,7 @@ Options specified on the command line override those in configuration files.
 
 | Directive | Command line | Description |
 | --------- | ------------ | ----------- |
-| sources   | -s, --source | Enable only SOURCE; can specify more than once; prefix with `!` to negate; use `*` to enable all sources; valid for main configuration only. |
+| sources   | -s, --source | Enable only SOURCE; can specify more than once; prefix with `!` to negate; use `*` to enable all sources; valid for main configuration only; can specify `source/service` to enable an individual source service. |
 | services  | --service    | Enable only SERVICE for a SOURCE; can specify more than once; prefix with `!` to negate; valid for main configuration only. |
 
 ### Source options
