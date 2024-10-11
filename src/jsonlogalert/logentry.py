@@ -23,8 +23,8 @@ class LogEntry:
             timestamp_field (str): Name of field containing entry timestamp.
             message_field (str): Name of field containing entry message.
         """
+        self.service = None  # set when claimed
         self.rawfields = rawfields
-        self.conceal_fields: set[str] = None
         self.timestamp_field = timestamp_field
         self.message_field = message_field
 
@@ -79,20 +79,35 @@ class LogEntry:
 
         return dict(sorted(fields.items()))
 
-    def add_conceal_fields(self, fields: Sequence[str]) -> str:
+    @cached_property
+    def conceal_fields(self) -> set[str] | None:
+        """Return set of fields concealed for this log entry.
+
+        Returns:
+            set[str] | None
+        """
+        return self.service.conceal_fields
+
+    def add_conceal_fields(self, fields: str | Sequence[str]) -> str:
         """Add fields to set of concealed fields.
 
-        Allows a template to conceal fields. Keep in mind this may affect all log entries
-        for the service if the service or source define 'conceal_fields'.
+        Allows a template to conceal fields.
+        Affects only this log entry.
+        Use `service.add_conceal_fields` to conceal for all log entries.
+        Fields be concealed before invoking `entry.fields`.
 
         Args:
-            fields (Sequence[str]): Fields to conceal.
+            fields (str|Sequence[str]): Field or fields to conceal.
 
         Returns:
             Empty string
         """
+        if isinstance(fields, str):
+            fields = [fields]
+
         if self.conceal_fields:
-            self.conceal_fields.update(fields)
+            # Create a copy so we do not affect other entries.
+            self.conceal_fields = self.conceal_fields | set(fields)
         else:
             self.conceal_fields = set(fields)
 

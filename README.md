@@ -551,6 +551,25 @@ Templates access details about log entries, their source and service using templ
 		{%- for (systemd_unit, syslog_id), group_entries in logentries_groupby(("_SYSTEMD_UNIT", "SYSLOG_IDENTIFIER")) -%}
 	```
 
+
+&bull; `add_conceal_fields` - Update concealed fields for a service or log entry. Fields must be concealed before accessing log entry `fields` property.
+
+	```
+	def add_conceal_fields(
+		fields: str | Sequence
+	) -> str:
+
+	Args:
+		fields (str | Sequence): Field name or sequence of fields (list or tuple).
+
+	Returns:
+		Empty string.
+
+	Example:
+		{{ e.add_conceal_fields(("_SYSTEMD_UNIT", "SYSLOG_IDENTIFIER")) }}
+		{{ service.add_conceal_fields(("_SYSTEMD_UNIT", "SYSLOG_IDENTIFIER")) }}
+	```
+
 #### Log entry properties
 
 Fields for each log entry element in `logentries` are accessed as properties.

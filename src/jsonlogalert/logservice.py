@@ -236,6 +236,18 @@ class LogService:
 
         return tuple(rewrite_field_patterns)
 
+    @cached_property
+    def conceal_fields(self) -> set[str] | None:
+        """Return set of log entry fields concealed for this service.
+
+        Returns:
+            set[str] | None
+        """
+        conceal_fields = self.service_config.get("conceal_fields")
+        if conceal_fields and not self.skip_conceal_fields:
+            return set(conceal_fields)
+        return None
+
     def load_conf(self, cli_config: dict[str, Any]) -> None:  # noqa: C901, PLR0912
         """Load service configuration.
 
@@ -371,8 +383,8 @@ class LogService:
         if capture_fields:
             rawfields = {k: rawfields.get(k) for k in capture_fields}
 
+        log_entry.service = self
         log_entry.rawfields = rawfields
-        log_entry.conceal_fields = self.conceal_fields if not self.skip_conceal_fields else None
 
         self.logentries.append(log_entry)
 
@@ -754,6 +766,29 @@ class LogService:
                 template_str = re.sub(r"\s+", " ", template_str).strip()
 
         return template_str
+
+    def add_conceal_fields(self, fields: str | Sequence[str]) -> str:
+        """Add fields to set of concealed fields.
+
+        Allows a template to conceal fields.
+        Affects all log entries for the service.
+
+        Args:
+            fields (str|Sequence[str]): Field or fields to conceal.
+
+        Returns:
+            Empty string
+        """
+        if isinstance(fields, str):
+            fields = [fields]
+
+        if self.conceal_fields:
+            self.conceal_fields.update(fields)
+        else:
+            self.conceal_fields = set(fields)
+
+        # Replace invocation with an empty string
+        return ""
 
     ######################################################################
     # Helper functions
