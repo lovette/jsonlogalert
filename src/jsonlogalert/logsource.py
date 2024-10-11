@@ -608,10 +608,11 @@ class LogSource:
         Raises:
             LogAlertConfigError
         """
-        if not self.tail_state_dir.is_dir():
-            self.config_error(f"'{self.tail_state_dir}': No such directory")
-        if not os.access(self.tail_state_dir, os.W_OK | os.X_OK):
-            self.config_error(f"'tail_state_dir' '{self.tail_state_dir}' requires write permission")
+        if not self.dry_run:
+            if not self.tail_state_dir.is_dir():
+                self.config_error(f"'{self.tail_state_dir}': No such directory")
+            if not os.access(self.tail_state_dir, os.W_OK | os.X_OK):
+                self.config_error(f"'tail_state_dir' '{self.tail_state_dir}' requires write permission")
 
         for log_service in self.services:
             log_service.validate_scan()
